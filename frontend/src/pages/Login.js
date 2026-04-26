@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 const Login = ({ setUser }) => {
     const [email, setEmail] = useState("");
@@ -11,11 +11,19 @@ const Login = ({ setUser }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
+            const res = await api.post("/auth/login", { email, password });
+            const loggedInUser = res.data.user;
             localStorage.setItem("token", res.data.token);
-            localStorage.setItem("user", JSON.stringify(res.data.user));
-            setUser(res.data.user);
-            navigate("/profile"); // redirect to profile after login
+            localStorage.setItem("user", JSON.stringify(loggedInUser));
+            setUser(loggedInUser);
+
+            if (loggedInUser.role === "owner") {
+                navigate("/owner-search", { replace: true });
+            } else if (loggedInUser.role === "admin") {
+                navigate("/admin", { replace: true });
+            } else {
+                navigate("/profile", { replace: true });
+            }
         } catch (err) {
             setError(err.response?.data?.message || "Login failed");
         }

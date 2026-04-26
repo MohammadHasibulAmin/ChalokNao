@@ -1,11 +1,41 @@
-const mongoose = require("mongoose");
+const { ObjectId } = require("mongodb");
+const connectDB = require("../config/db");
 
-const interviewSchema = new mongoose.Schema({
-    driverId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    date: Date,
-    mode: { type: String, enum: ["online","offline","chat"] },
-    status: { type: String, enum: ["Pending","Accepted","Rejected"], default: "Pending" }
-}, { timestamps: true });
+const COLLECTION = "interviews";
 
-module.exports = mongoose.model("Interview", interviewSchema);
+async function getCollection() {
+    const db = await connectDB();
+    return db.collection(COLLECTION);
+}
+
+async function createInterview(payload) {
+    const result = await (await getCollection()).insertOne({
+        ...payload,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    });
+    return (await getCollection()).findOne({ _id: result.insertedId });
+}
+
+async function updateInterviewStatus(id, status) {
+    await (await getCollection()).updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status, updatedAt: new Date() } }
+    );
+    return (await getCollection()).findOne({ _id: new ObjectId(id) });
+}
+
+async function listByDriver(driverId) {
+    return (await getCollection()).find({ driverId }).sort({ createdAt: -1 }).toArray();
+}
+
+async function listByOwner(ownerId) {
+    return (await getCollection()).find({ ownerId }).sort({ createdAt: -1 }).toArray();
+}
+
+module.exports = {
+    createInterview,
+    updateInterviewStatus,
+    listByDriver,
+    listByOwner,
+};

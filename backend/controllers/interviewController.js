@@ -1,63 +1,68 @@
-const connectDB = require("../config/db");
-const { ObjectId } = require("mongodb");
+const Interview = require("../models/Interview");
 
-// CREATE / UPDATE DRIVER PROFILE
-exports.createOrUpdateProfile = async (req, res) => {
+exports.requestInterview = async (req, res) => {
   try {
-    const db = await connectDB();
-    const { userId, age, experience, licenseNumber, workType, salaryExpectation, location } = req.body;
+    const { ownerId, driverId, type, date, location, locationLat, locationLng } = req.body;
 
-    if (!userId) return res.status(400).json({ message: "userId is required" });
-
-    const driverCollection = db.collection("drivers");
-
-    // Check if driver profile exists
-    let driver = await driverCollection.findOne({ userId });
-
-    if (driver) {
-      // update existing
-      const updateResult = await driverCollection.updateOne(
-        { userId },
-        {
-          $set: { age, experience, licenseNumber, workType, salaryExpectation, location },
-        }
-      );
-      driver = await driverCollection.findOne({ userId });
-    } else {
-      // create new
-      const insertResult = await driverCollection.insertOne({
-        userId,
-        age,
-        experience,
-        licenseNumber,
-        workType,
-        salaryExpectation,
-        location,
-      });
-      driver = await driverCollection.findOne({ _id: insertResult.insertedId });
+    if (!ownerId || !driverId || !type || !date) {
+      return res.status(400).json({ message: "ownerId, driverId, type and date are required" });
     }
 
-    res.json(driver);
+    const interview = await Interview.createInterview({
+      ownerId,
+      driverId,
+      type,
+      date: new Date(date),
+      location: location || null,
+      locationCoordinates:
+        Number.isFinite(Number(locationLat)) && Number.isFinite(Number(locationLng))
+          ? { lat: Number(locationLat), lng: Number(locationLng) }
+          : null,
+      status: "pending",
+    });
 
+    return res.status(201).json(interview);
   } catch (err) {
-    console.error("FULL ERROR:", err);
-    res.status(500).json({ message: err.message });
+    console.error("REQUEST INTERVIEW ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// SEARCH DRIVERS BY LOCATION
-exports.searchDrivers = async (req, res) => {
+exports.respondInterview = async (req, res) => {
   try {
-    const { location } = req.query;
-    if (!location) return res.status(400).json({ message: "location query is required" });
+    const { status } = req.body;
+    if (!["accepted", "rejected"].includes(String(status || "").toLowerCase())) {
+      return res.status(400).json({ message: "status must be accepted or rejected" });
+    }
 
-    const db = await connectDB();
-    const drivers = await db.collection("drivers").find({ location }).toArray();
+    const interview = await Interview.updateInterviewStatus(req.params.id, String(status).toLowerCase());
+    if (!interview) {
+      return res.status(404).json({ message: "Interview not found" });
+    }
 
-    res.json(drivers);
-
+    return res.json(interview);
   } catch (err) {
-    console.error("FULL ERROR:", err);
-    res.status(500).json({ message: err.message });
+    console.error("RESPOND INTERVIEW ERROR:", err);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getDriverInterviews = async (req, res) => {
+  try {
+    const interviews = await Interview.listByDriver(req.params.driverId);
+    return res.json(interviews);
+  } catch (err) {
+    console.error("GET DRIVER INTERVIEWS ERROR:", err);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getOwnerInterviews = async (req, res) => {
+  try {
+    const interviews = await Interview.listByOwner(req.params.ownerId);
+    return res.json(interviews);
+  } catch (err) {
+    console.error("GET OWNER INTERVIEWS ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };

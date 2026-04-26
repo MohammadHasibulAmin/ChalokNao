@@ -2,6 +2,14 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Environment Variables
+
+To enable Google Maps autocomplete in location fields, create a `.env` file in the `frontend` folder and set:
+
+`REACT_APP_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here`
+
+You can copy values from `.env.example`.
+
 ## Available Scripts
 
 In the project directory, you can run:

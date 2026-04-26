@@ -1,14 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const { requestInterview, getDriverInterviews, respondInterview } = require("../controllers/interviewController");
+const {
+  requestInterview,
+  getDriverInterviews,
+  getOwnerInterviews,
+  respondInterview,
+} = require("../controllers/interviewController");
 
-// POST /api/interviews/request
-router.post("/request", requestInterview);
-
-// GET /api/interviews/driver/:driverId
+router.post("/owner/interview", requestInterview);
 router.get("/driver/:driverId", getDriverInterviews);
-
-// POST /api/interviews/respond/:id
-router.post("/respond/:id", respondInterview);
+router.get("/owner/:ownerId", getOwnerInterviews);
+router.put("/driver/interview/:id", respondInterview);
 
 module.exports = router;

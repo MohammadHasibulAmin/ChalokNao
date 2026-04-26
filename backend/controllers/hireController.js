@@ -1,75 +1,73 @@
-const connectDB = require("../config/db");
-const { ObjectId } = require("mongodb");
+const Hire = require("../models/Hire");
 
-// CREATE / UPDATE HIRE
-exports.createOrUpdateHire = async (req, res) => {
+exports.createHire = async (req, res) => {
   try {
-    const db = await connectDB();
-    const { hireId, candidateName, position, startDate, salary } = req.body;
-
-    const collection = db.collection("hires");
-
-    if (hireId) {
-      // Update existing hire
-      await collection.updateOne(
-        { _id: new ObjectId(hireId) },
-        { $set: { candidateName, position, startDate, salary } }
-      );
-      const updated = await collection.findOne({ _id: new ObjectId(hireId) });
-      return res.json(updated);
+    const { ownerId, driverId, salary, duration } = req.body;
+    if (!ownerId || !driverId) {
+      return res.status(400).json({ message: "ownerId and driverId are required" });
     }
 
-    // Create new hire
-    const insertResult = await collection.insertOne({
-      candidateName,
-      position,
-      startDate,
-      salary,
+    const hire = await Hire.createHire({
+      ownerId,
+      driverId,
+      salary: Number(salary || 0),
+      duration: duration || null,
+      ownerConfirm: true,
+      driverConfirm: false,
     });
 
-    const newHire = await collection.findOne({ _id: insertResult.insertedId });
-    res.json(newHire);
-
+    return res.status(201).json(hire);
   } catch (err) {
-    console.error("FULL ERROR:", err);
-    res.status(500).json({ message: err.message });
+    console.error("CREATE HIRE ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// GET ALL HIRES
-exports.getAllHires = async (req, res) => {
+exports.confirmHire = async (req, res) => {
   try {
-    const db = await connectDB();
-    const hires = await db.collection("hires").find({}).toArray();
-    res.json(hires);
+    const { actor } = req.body;
+    const hire = await Hire.findById(req.params.id);
+
+    if (!hire) {
+      return res.status(404).json({ message: "Hire not found" });
+    }
+
+    const update = {};
+    if (actor === "driver") update.driverConfirm = true;
+    if (actor === "owner") update.ownerConfirm = true;
+
+    const shouldConfirm = (update.driverConfirm || hire.driverConfirm) && (update.ownerConfirm || hire.ownerConfirm);
+    if (shouldConfirm) {
+      update.status = "Confirmed";
+    }
+
+    const updated = await Hire.updateHire(req.params.id, update);
+    return res.json(updated);
   } catch (err) {
-    console.error("FULL ERROR:", err);
-    res.status(500).json({ message: err.message });
+    console.error("CONFIRM HIRE ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// GET HIRE BY ID
-exports.getHireById = async (req, res) => {
+exports.getHireStatus = async (req, res) => {
   try {
-    const db = await connectDB();
-    const hire = await db.collection("hires").findOne({ _id: new ObjectId(req.params.id) });
-    if (!hire) return res.status(404).json({ message: "Hire not found" });
-    res.json(hire);
+    const hire = await Hire.findById(req.params.id);
+    if (!hire) {
+      return res.status(404).json({ message: "Hire not found" });
+    }
+    return res.json(hire);
   } catch (err) {
-    console.error("FULL ERROR:", err);
-    res.status(500).json({ message: err.message });
+    console.error("GET HIRE STATUS ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// DELETE HIRE
-exports.deleteHire = async (req, res) => {
+exports.getOwnerHires = async (req, res) => {
   try {
-    const db = await connectDB();
-    const result = await db.collection("hires").deleteOne({ _id: new ObjectId(req.params.id) });
-    if (result.deletedCount === 0) return res.status(404).json({ message: "Hire not found" });
-    res.json({ message: "Hire deleted successfully" });
+    const hires = await Hire.listByOwner(req.params.ownerId);
+    return res.json(hires);
   } catch (err) {
-    console.error("FULL ERROR:", err);
-    res.status(500).json({ message: err.message });
+    console.error("GET OWNER HIRES ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };

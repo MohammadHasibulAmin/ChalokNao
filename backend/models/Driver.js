@@ -1,21 +1,49 @@
-const mongoose = require("mongoose");
+const { ObjectId } = require("mongodb");
+const connectDB = require("../config/db");
 
-const driverSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    photo: String,
-    age: Number,
-    experience: String,
-    licenseNumber: String,
-    workType: { type: String, enum: ["full-time","temporary"] },
-    salaryExpectation: Number,
-    status: { type: String, enum: ["Available","Employed"], default: "Available" },
-    location: String,
-    badges: [String],
-    trainingModules: [{
-        name: String,
-        score: Number,
-        certificate: String
-    }]
-}, { timestamps: true });
+const COLLECTION = "drivers";
 
-module.exports = mongoose.model("Driver", driverSchema);
+async function getCollection() {
+    const db = await connectDB();
+    return db.collection(COLLECTION);
+}
+
+async function findByUserId(userId) {
+    return (await getCollection()).findOne({ userId });
+}
+
+async function upsertByUserId(userId, payload) {
+    await (await getCollection()).updateOne(
+        { userId },
+        {
+            $set: {
+                ...payload,
+                userId,
+                updatedAt: new Date(),
+            },
+            $setOnInsert: {
+                createdAt: new Date(),
+                totalReviews: 0,
+                ratingAvg: 0,
+            },
+        },
+        { upsert: true }
+    );
+
+    return findByUserId(userId);
+}
+
+async function findById(id) {
+    return (await getCollection()).findOne({ _id: new ObjectId(id) });
+}
+
+async function listByFilter(filter) {
+    return (await getCollection()).find(filter).toArray();
+}
+
+module.exports = {
+    findByUserId,
+    upsertByUserId,
+    findById,
+    listByFilter,
+};
