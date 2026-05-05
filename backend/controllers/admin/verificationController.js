@@ -20,6 +20,39 @@ exports.verifyDriverDocument = async (req, res) => {
     );
 
     const driver = await db.collection("drivers").findOne({ _id: new ObjectId(req.params.id) });
+    // create a notification for the linked user so they'll see it on next login
+    try {
+      const userIdStr = String(driver?.userId || "");
+      if (userIdStr) {
+        const notif = {
+          _id: new ObjectId(),
+          type: "verification",
+          status: String(status).toLowerCase(),
+          message: `Your profile verification has been ${String(status).toLowerCase()}`,
+          data: { driverId: String(driver._id) },
+          read: false,
+          createdAt: new Date(),
+        };
+
+        await db.collection("user").updateOne(
+          { _id: new ObjectId(userIdStr) },
+          { $push: { notifications: notif }, $set: { updatedAt: new Date() } }
+        );
+
+        // emit socket event to user room if connected
+        try {
+          const socketManager = require("../../socket/socketManager");
+          const io = socketManager.getIo();
+          io.to(`user:${userIdStr}`).emit("verification:updated", notif);
+        } catch (err) {
+          // socket not available or emit failed - ignore silently
+          console.warn("Socket emit failed:", err.message);
+        }
+      }
+    } catch (err) {
+      console.warn("Create notification failed:", err.message);
+    }
+
     return res.json(driver);
   } catch (err) {
     console.error("VERIFY DOCUMENT ERROR:", err);

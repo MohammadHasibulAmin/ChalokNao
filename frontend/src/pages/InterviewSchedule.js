@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import api from "../services/api";
-import GooglePlacesInput from "../components/maps/GooglePlacesInput";
-import GoogleMapsLink from "../components/maps/GoogleMapsLink";
+import OpenStreetMapInput from "../components/maps/OpenStreetMapInput";
+import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
 
 const InterviewSchedule = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +13,7 @@ const InterviewSchedule = () => {
     locationLng: "",
   });
   const [message, setMessage] = useState("");
+  const [errors, setErrors] = useState({});
 
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
@@ -24,14 +25,26 @@ const InterviewSchedule = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const newErrors = {};
+      if (!formData.driverId) newErrors.driverId = "Driver ID is required.";
+      if (!formData.date) newErrors.date = "Please choose an interview date.";
+      if (formData.type === "offline" && !formData.location) newErrors.location = "Address is required for offline interviews.";
+
+      if (Object.keys(newErrors).length) {
+        setErrors(newErrors);
+        return;
+      }
+
+      setErrors({});
+
       await api.post("/interviews/owner/interview", {
         ownerId: userId,
         driverId: formData.driverId,
         type: formData.type,
         date: formData.date,
-        location: formData.location,
-        locationLat: formData.locationLat,
-        locationLng: formData.locationLng,
+        location: formData.type === "offline" ? formData.location : null,
+        locationLat: formData.type === "offline" ? formData.locationLat : null,
+        locationLng: formData.type === "offline" ? formData.locationLng : null,
       });
       setMessage("Interview scheduled!");
       setFormData({ driverId: "", type: "online", date: "", location: "", locationLat: "", locationLng: "" });
@@ -53,8 +66,9 @@ const InterviewSchedule = () => {
           value={formData.driverId}
           onChange={handleChange}
           required
-          style={inputStyle}
+          style={errors.driverId ? { ...inputStyle, borderColor: "#ef4444" } : inputStyle}
         />
+        {errors.driverId && <div style={{ color: "#b91c1c", fontSize: 13 }}>{errors.driverId}</div>}
         <select name="type" value={formData.type} onChange={handleChange} style={inputStyle}>
           <option value="online">Online</option>
           <option value="offline">Offline</option>
@@ -66,30 +80,36 @@ const InterviewSchedule = () => {
           value={formData.date}
           onChange={handleChange}
           required
-          style={inputStyle}
+          style={errors.date ? { ...inputStyle, borderColor: "#ef4444" } : inputStyle}
         />
-        <GooglePlacesInput
-          name="location"
-          placeholder="Location (if offline)"
-          value={formData.location}
-          onChange={handleChange}
-          onPlaceSelected={({ address, lat, lng }) => {
-            setFormData((current) => ({
-              ...current,
-              location: address || current.location,
-              locationLat: Number.isFinite(lat) ? String(lat) : current.locationLat,
-              locationLng: Number.isFinite(lng) ? String(lng) : current.locationLng,
-            }));
-          }}
-          style={inputStyle}
-        />
-        {!!formData.location && (
-          <GoogleMapsLink
-            label="Check location on Google Maps"
-            query={formData.location}
-            lat={formData.locationLat}
-            lng={formData.locationLng}
-          />
+        {errors.date && <div style={{ color: "#b91c1c", fontSize: 13 }}>{errors.date}</div>}
+        {formData.type === "offline" && (
+          <>
+            <OpenStreetMapInput
+              name="location"
+              placeholder="Address (required for offline interviews)"
+              value={formData.location}
+              onChange={handleChange}
+              onPlaceSelected={({ address, lat, lng }) => {
+                setFormData((current) => ({
+                  ...current,
+                  location: address || current.location,
+                  locationLat: Number.isFinite(lat) ? String(lat) : current.locationLat,
+                  locationLng: Number.isFinite(lng) ? String(lng) : current.locationLng,
+                }));
+              }}
+              style={errors.location ? { ...inputStyle, borderColor: "#ef4444" } : inputStyle}
+            />
+            {!!formData.location && (
+              <OpenStreetMapLink
+                label="Check location in OpenStreetMap"
+                query={formData.location}
+                lat={formData.locationLat}
+                lng={formData.locationLng}
+              />
+            )}
+            {errors.location && <div style={{ color: "#b91c1c", fontSize: 13 }}>{errors.location}</div>}
+          </>
         )}
         <button type="submit" style={buttonStyle}>
           Schedule Interview

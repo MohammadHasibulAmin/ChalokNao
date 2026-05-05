@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import GoogleMapsLink from "../components/maps/GoogleMapsLink";
-import GooglePlacesInput from "../components/maps/GooglePlacesInput";
+import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
+import OpenStreetMapInput from "../components/maps/OpenStreetMapInput";
 
 const getProfileStorageKey = (ownerId) => {
   return `chaloknao_owner_profile_${ownerId || "anonymous"}`;
@@ -83,17 +83,12 @@ const baseProfileFromUser = (currentUser, useCurrentUserDefaults) => ({
   company: "",
   location: "",
   phone: "",
-  jobLocations: "",
+  jobLocation: "",
   description: "",
 });
 
 const normalizeProfileForPublicView = (profile, currentUser, feedbackList) => {
-  const jobLocations = Array.isArray(profile.jobLocations)
-    ? profile.jobLocations
-    : String(profile.jobLocations || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
+  const jobLocation = String(profile.jobLocation || profile.location || "").trim();
 
   const ratingAvg = feedbackList.length
     ? feedbackList.reduce((sum, entry) => sum + Number(entry.rating || 0), 0) / feedbackList.length
@@ -106,7 +101,7 @@ const normalizeProfileForPublicView = (profile, currentUser, feedbackList) => {
     location: profile.location || "",
     phone: profile.phone || "",
     email: profile.email || currentUser?.email || "",
-    jobLocations,
+    jobLocations: jobLocation ? [jobLocation] : [],
     description: profile.description || "",
     ratingAvg,
     totalReviews: feedbackList.length,
@@ -145,7 +140,13 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
 
     const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || "null");
     if (savedProfile && typeof savedProfile === "object") {
-      setProfile((currentProfile) => ({ ...currentProfile, ...savedProfile }));
+      setProfile((currentProfile) => ({
+        ...currentProfile,
+        ...savedProfile,
+        jobLocation:
+          savedProfile.jobLocation ||
+          (Array.isArray(savedProfile.jobLocations) ? savedProfile.jobLocations[0] : String(savedProfile.jobLocations || "")),
+      }));
     }
 
     const savedFeedback = JSON.parse(localStorage.getItem(feedbackStorageKey) || "null");
@@ -174,10 +175,7 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
 
     const normalizedProfile = {
       ...profile,
-      jobLocations: String(profile.jobLocations || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
+      jobLocation: String(profile.jobLocation || profile.location || "").trim(),
     };
 
     setProfile(normalizedProfile);
@@ -223,9 +221,7 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
     setComment("");
   };
 
-  const jobLocationsText = Array.isArray(profile.jobLocations)
-    ? profile.jobLocations.join(", ")
-    : profile.jobLocations;
+  const jobLocationValue = String(profile.jobLocation || profile.location || "").trim();
 
   return (
     <div style={cardStyle}>
@@ -258,7 +254,7 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
               <input id="company" name="company" value={profile.company} onChange={handleProfileChange} style={inputStyle} placeholder="Car owner or business name" />
 
               <label style={labelStyle} htmlFor="location">Location</label>
-              <GooglePlacesInput
+              <OpenStreetMapInput
                 id="location"
                 name="location"
                 value={profile.location}
@@ -267,7 +263,7 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
                 placeholder="City or area"
               />
               {!!profile.location && (
-                <GoogleMapsLink label="Open owner location on OpenStreetMap" query={profile.location} style={{ fontSize: "13px" }} />
+                <OpenStreetMapLink label="Open owner location in OpenStreetMap" query={profile.location} style={{ fontSize: "13px" }} />
               )}
 
               <label style={labelStyle} htmlFor="phone">Phone</label>
@@ -276,8 +272,18 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
               <label style={labelStyle} htmlFor="email">Email</label>
               <input id="email" name="email" value={profile.email} onChange={handleProfileChange} style={inputStyle} />
 
-              <label style={labelStyle} htmlFor="jobLocations">Job Locations</label>
-              <input id="jobLocations" name="jobLocations" value={jobLocationsText} onChange={handleProfileChange} style={inputStyle} placeholder="Comma-separated locations" />
+              <label style={labelStyle} htmlFor="jobLocation">Job Location</label>
+              <OpenStreetMapInput
+                id="jobLocation"
+                name="jobLocation"
+                value={jobLocationValue}
+                onChange={handleProfileChange}
+                style={inputStyle}
+                placeholder="Search job location with OpenStreetMap"
+              />
+              {!!jobLocationValue && (
+                <OpenStreetMapLink label="Open job location in OpenStreetMap" query={jobLocationValue} style={{ fontSize: "13px" }} />
+              )}
 
               <label style={labelStyle} htmlFor="description">Public Description</label>
               <textarea id="description" name="description" value={profile.description} onChange={handleProfileChange} rows={4} style={{ ...inputStyle, resize: "vertical" }} placeholder="Describe your hiring needs" />
@@ -290,26 +296,13 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
               <p><strong>Name:</strong> {profile.name || "Not provided yet"}</p>
               <p><strong>Company:</strong> {profile.company || "Not provided yet"}</p>
               <p><strong>Location:</strong> {profile.location || "Not provided yet"}</p>
-              {!!profile.location && <GoogleMapsLink label="Open owner location on OpenStreetMap" query={profile.location} style={{ fontSize: "13px" }} />}
+              {!!profile.location && <OpenStreetMapLink label="Open owner location in OpenStreetMap" query={profile.location} style={{ fontSize: "13px" }} />}
+              <p><strong>Job Location:</strong> {jobLocationValue || "Not provided yet"}</p>
+              {!!jobLocationValue && <OpenStreetMapLink label="Open job location in OpenStreetMap" query={jobLocationValue} style={{ fontSize: "13px" }} />}
               <p><strong>Phone:</strong> {profile.phone || "Not provided yet"}</p>
               <p><strong>Email:</strong> {profile.email || "Not provided yet"}</p>
             </>
           )}
-        </div>
-
-        <div style={panelStyle}>
-          <h3 style={{ marginTop: 0 }}>Job Locations for Drivers</h3>
-          <p style={{ color: "#475569" }}>Drivers can quickly see the places where this owner usually hires cars and drivers.</p>
-          <ul style={{ paddingLeft: "18px", marginBottom: 0 }}>
-            {(Array.isArray(profile.jobLocations) ? profile.jobLocations : jobLocationsText.split(",").map((item) => item.trim()).filter(Boolean)).map((location) => (
-              <li key={location} style={{ marginBottom: "6px" }}>
-                {location}
-                <span style={{ marginLeft: "8px" }}>
-                  <GoogleMapsLink label="map" query={location} style={{ fontSize: "12px" }} />
-                </span>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
 

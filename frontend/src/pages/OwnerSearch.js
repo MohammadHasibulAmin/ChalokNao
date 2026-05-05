@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
-import GoogleMapsLink from "../components/maps/GoogleMapsLink";
+import OpenStreetMapInput from "../components/maps/OpenStreetMapInput";
+import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
 
 const publicDirectoryKey = "chaloknao_public_owner_directory";
 
@@ -303,7 +304,7 @@ const Marketplace = ({ currentRole }) => {
             placeholder="Search by name, company, or city"
             style={inputStyle}
           />
-          <input
+          <OpenStreetMapInput
             name="location"
             value={filters.location}
             onChange={handleChange}
@@ -370,8 +371,8 @@ const Marketplace = ({ currentRole }) => {
                       {getDriverLocation(driver) || "Unknown city"} {driver.workType ? `• ${driver.workType}` : ""}
                     </p>
                     {getDriverLocation(driver) && (
-                      <GoogleMapsLink
-                        label="View on Google Maps"
+                      <OpenStreetMapLink
+                        label="View in OpenStreetMap"
                         query={getDriverLocation(driver)}
                         lat={driver.location?.coordinates?.lat}
                         lng={driver.location?.coordinates?.lng}
@@ -407,7 +408,7 @@ const Marketplace = ({ currentRole }) => {
                     <p style={{ ...mutedStyle, margin: "6px 0 0" }}>
                       {owner.company || "No company name"}{owner.location ? ` • ${owner.location}` : ""}
                     </p>
-                    {owner.location && <GoogleMapsLink label="View on Google Maps" query={owner.location} style={{ fontSize: "12px" }} />}
+                    {owner.location && <OpenStreetMapLink label="View in OpenStreetMap" query={owner.location} style={{ fontSize: "12px" }} />}
                   </div>
                   <span style={badgeStyle}>Priority #{index + 1}</span>
                 </div>

@@ -1,13 +1,34 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
-import GoogleMapsLink from "../components/maps/GoogleMapsLink";
+import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
+import OpenStreetMapInput from "../components/maps/OpenStreetMapInput";
+import { getCompareDriverIds, toggleCompareDriverId } from "../utils/compareList";
 
 const DriverPublicProfile = () => {
   const { driverId } = useParams();
   const [driver, setDriver] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [compareIds, setCompareIds] = useState(() => getCompareDriverIds());
+  const [interviewType, setInterviewType] = useState("online");
+  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewLocation, setInterviewLocation] = useState("");
+  const [interviewLocationLat, setInterviewLocationLat] = useState("");
+  const [interviewLocationLng, setInterviewLocationLng] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const currentUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const isOwner = currentUser?.role === "owner";
 
   useEffect(() => {
     const loadDriver = async () => {
@@ -20,6 +41,9 @@ const DriverPublicProfile = () => {
       try {
         const res = await api.get(`/drivers/${driverId}`);
         setDriver(res.data || null);
+        setInterviewLocation(res.data?.location?.city || "");
+        setInterviewLocationLat(res.data?.location?.coordinates?.lat ? String(res.data.location.coordinates.lat) : "");
+        setInterviewLocationLng(res.data?.location?.coordinates?.lng ? String(res.data.location.coordinates.lng) : "");
       } catch (err) {
         setError(err.response?.data?.message || "Unable to load driver profile");
       } finally {
@@ -30,6 +54,12 @@ const DriverPublicProfile = () => {
     loadDriver();
   }, [driverId]);
 
+  useEffect(() => {
+    const refreshCompare = (event) => setCompareIds(Array.isArray(event?.detail) ? event.detail : getCompareDriverIds());
+    window.addEventListener("driver-compare-updated", refreshCompare);
+    return () => window.removeEventListener("driver-compare-updated", refreshCompare);
+  }, []);
+
   const trainingBadges = useMemo(() => {
     return Array.isArray(driver?.trainingBadges) ? driver.trainingBadges : [];
   }, [driver?.trainingBadges]);
@@ -37,6 +67,45 @@ const DriverPublicProfile = () => {
   const profileBadges = useMemo(() => {
     return Array.isArray(driver?.badges) ? driver.badges : [];
   }, [driver?.badges]);
+
+  const handleRequestInterview = async (event) => {
+    event.preventDefault();
+
+    if (!isOwner || !currentUser?.id || !driver?._id) {
+      setMessage("You must be logged in as an owner to request an interview.");
+      return;
+    }
+
+    const newErrors = {};
+    if (!interviewDate) newErrors.date = "Please choose an interview date.";
+    if (interviewType === "offline" && !interviewLocation) newErrors.location = "Address is required for offline interviews.";
+
+    if (Object.keys(newErrors).length) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+
+    try {
+      setIsSubmitting(true);
+      setMessage("");
+      await api.post("/interviews/owner/interview", {
+        ownerId: currentUser.id,
+        driverId: driver._id,
+        type: interviewType,
+        date: interviewDate,
+        location: interviewType === "offline" ? (interviewLocation || driver.location?.city || "") : null,
+        locationLat: interviewType === "offline" ? interviewLocationLat : null,
+        locationLng: interviewType === "offline" ? interviewLocationLng : null,
+      });
+      setMessage("Interview request sent.");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Unable to send interview request.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading) {
     return <div style={containerStyle}><p>Loading driver profile...</p></div>;
@@ -112,7 +181,7 @@ const DriverPublicProfile = () => {
 
         {driver.location?.city && (
           <div style={{ marginTop: "10px" }}>
-            <GoogleMapsLink
+            <OpenStreetMapLink
               label="View Location"
               query={driver.location.city}
               lat={driver.location?.coordinates?.lat}
@@ -120,7 +189,93 @@ const DriverPublicProfile = () => {
             />
           </div>
         )}
+
+        {isOwner && (
+          <div style={ownerActionCardStyle}>
+            <div style={ownerActionHeaderStyle}>
+              <div>
+                <h4 style={{ margin: 0 }}>Owner Actions</h4>
+                <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                  Shortlist this driver, request an interview, or add them to your compare list.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => toggleCompareDriverId(driver._id, driver.name)}
+                style={compareIds.includes(String(driver._id)) ? actionPrimaryButtonStyle : actionOutlineButtonStyle}
+              >
+                {compareIds.includes(String(driver._id)) ? "Remove from Compare" : "Add to Compare"}
+              </button>
+            </div>
+
+            {/* Shortlist handled from Marketplace/Shortlist — removed button here */}
+
+            <form onSubmit={handleRequestInterview} style={{ marginTop: "14px" }}>
+              <div style={ownerFormGridStyle}>
+                <div>
+                  <label style={ownerLabelStyle} htmlFor="interviewType">Interview Type</label>
+                  <select
+                    id="interviewType"
+                    value={interviewType}
+                    onChange={(event) => setInterviewType(event.target.value)}
+                    style={ownerInputStyle}
+                  >
+                    <option value="online">Online</option>
+                    <option value="offline">Offline</option>
+                    <option value="chat">Chat</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={ownerLabelStyle} htmlFor="interviewDate">Interview Date</label>
+                  <input
+                    id="interviewDate"
+                    type="datetime-local"
+                    value={interviewDate}
+                    onChange={(event) => setInterviewDate(event.target.value)}
+                    style={errors.date ? { ...ownerInputStyle, borderColor: "#ef4444" } : ownerInputStyle}
+                  />
+                  {errors.date && <div style={{ color: "#b91c1c", fontSize: 13 }}>{errors.date}</div>}
+                </div>
+
+                {interviewType === "offline" && (
+                  <div>
+                    <label style={ownerLabelStyle} htmlFor="interviewLocation">Interview Location</label>
+                    <OpenStreetMapInput
+                      name="interviewLocation"
+                      placeholder="Address (required for offline interviews)"
+                      value={interviewLocation}
+                      onChange={(e) => setInterviewLocation(e.target.value)}
+                      onPlaceSelected={({ address, lat, lng }) => {
+                        setInterviewLocation(address || interviewLocation);
+                        setInterviewLocationLat(Number.isFinite(lat) ? String(lat) : interviewLocationLat);
+                        setInterviewLocationLng(Number.isFinite(lng) ? String(lng) : interviewLocationLng);
+                      }}
+                      style={errors.location ? { ...ownerInputStyle, borderColor: "#ef4444" } : ownerInputStyle}
+                    />
+
+                    {!!interviewLocation && (
+                      <OpenStreetMapLink
+                        label="Check location in OpenStreetMap"
+                        query={interviewLocation}
+                        lat={interviewLocationLat}
+                        lng={interviewLocationLng}
+                      />
+                    )}
+                    {errors.location && <div style={{ color: "#b91c1c", fontSize: 13 }}>{errors.location}</div>}
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" disabled={isSubmitting} style={{ ...actionPrimaryButtonStyle, marginTop: "12px" }}>
+                {isSubmitting ? "Sending..." : "Request Interview"}
+              </button>
+            </form>
+          </div>
+        )}
       </section>
+
+      {message && <p style={{ marginTop: "12px", color: "#0f766e", fontWeight: 700 }}>{message}</p>}
 
       <Link to="/marketplace" style={backLinkStyle}>Back to marketplace</Link>
     </div>
@@ -209,6 +364,71 @@ const backLinkStyle = {
   marginTop: "8px",
   color: "#0f766e",
   fontWeight: 700,
+};
+
+const ownerActionCardStyle = {
+  marginTop: "14px",
+  padding: "16px",
+  borderRadius: "12px",
+  border: "1px solid rgba(11, 128, 116, 0.08)",
+  backgroundColor: "#ffffff",
+  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.04)",
+};
+
+const ownerActionHeaderStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "12px",
+  flexWrap: "wrap",
+  alignItems: "flex-start",
+};
+
+
+
+const ownerFormGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+  gap: "10px",
+};
+
+const ownerLabelStyle = {
+  display: "block",
+  fontSize: "13px",
+  fontWeight: 700,
+  marginBottom: "6px",
+  color: "#334155",
+};
+
+const ownerInputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: "1px solid #cbd5e1",
+  fontSize: "14px",
+  backgroundColor: "#fff",
+};
+
+const actionPrimaryButtonStyle = {
+  padding: "10px 14px",
+  borderRadius: "10px",
+  border: "none",
+  backgroundColor: "#0ea5a0",
+  color: "#fff",
+  fontWeight: 700,
+  cursor: "pointer",
+  boxShadow: "0 6px 14px rgba(14,165,160,0.12)",
+  transition: "transform .08s ease, box-shadow .12s ease",
+};
+
+const actionOutlineButtonStyle = {
+  padding: "10px 14px",
+  borderRadius: "10px",
+  border: "1px solid rgba(15,118,110,0.12)",
+  backgroundColor: "#fff",
+  color: "#0f766e",
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "background-color .12s ease, transform .08s ease",
 };
 
 export default DriverPublicProfile;

@@ -17,6 +17,12 @@ const Login = ({ setUser }) => {
             localStorage.setItem("user", JSON.stringify(loggedInUser));
             setUser(loggedInUser);
 
+            // dispatch any notifications included in login response
+            const notifications = loggedInUser.notifications || [];
+            if (Array.isArray(notifications) && notifications.length) {
+                notifications.forEach((n) => window.dispatchEvent(new CustomEvent("app:notification", { detail: n })));
+            }
+
             if (loggedInUser.role === "owner") {
                 navigate("/owner-search", { replace: true });
             } else if (loggedInUser.role === "admin") {

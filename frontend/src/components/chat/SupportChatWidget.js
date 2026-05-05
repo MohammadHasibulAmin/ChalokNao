@@ -128,6 +128,18 @@ const SupportChatWidget = ({ user }) => {
       }
     });
 
+    // listen for admin verification notifications
+    socket.on("verification:updated", (notif) => {
+      try {
+        // only show if notification is for current user - server emits to user room
+        // simple in-app toast: use window alert fallback
+        // Prefer non-blocking UI: dispatch custom event so other components can show UI
+        window.dispatchEvent(new CustomEvent("app:notification", { detail: notif }));
+      } catch (err) {
+        console.warn("notification receive failed", err.message);
+      }
+    });
+
     socket.on("connect_error", () => {
       // Keep REST fallback available when socket auth/connect fails.
     });
@@ -220,7 +232,7 @@ const SupportChatWidget = ({ user }) => {
   return (
     <>
       <button type="button" onClick={() => setIsOpen((prev) => !prev)} style={launcherStyle} aria-label="Open support chat">
-        <span style={iconStyle}>?</span>
+        <span style={iconStyle}>💬</span>
         {unreadCount > 0 ? <span style={badgeStyle}>{unreadCount > 9 ? "9+" : unreadCount}</span> : null}
       </button>
 
@@ -312,18 +324,21 @@ const launcherStyle = {
   position: "fixed",
   right: "20px",
   bottom: "20px",
-  width: "56px",
-  height: "56px",
+  width: "60px",
+  height: "60px",
   borderRadius: "50%",
   border: "none",
-  background: "linear-gradient(135deg, #0a7f5a, #0d5f8f)",
+  background: "linear-gradient(135deg, #0ea5e9, #2563eb)",
   color: "#fff",
   cursor: "pointer",
-  boxShadow: "0 10px 24px rgba(0,0,0,0.25)",
+  boxShadow: "0 12px 28px rgba(37, 99, 235, 0.35)",
   zIndex: 1000,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
-const iconStyle = { fontSize: "24px", fontWeight: 700, lineHeight: 1 };
+const iconStyle = { fontSize: "26px", lineHeight: 1, transform: "translateY(-1px)" };
 
 const badgeStyle = {
   position: "absolute",

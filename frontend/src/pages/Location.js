@@ -1,265 +1,165 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import api from "../services/api";
-
-const OSM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
+import OpenStreetMapInput from "../components/maps/OpenStreetMapInput";
+import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
 
 const Location = () => {
-  const [draftLocation, setDraftLocation] = useState({
-    city: "",
-    lat: "",
-    lng: "",
-  });
-  const [serviceAreas, setServiceAreas] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isLoadingSaved, setIsLoadingSaved] = useState(true);
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("success");
-
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
 
-  const handleDraftChange = (e) => {
-    setDraftLocation({ ...draftLocation, [e.target.name]: e.target.value });
-  };
+  const initialServiceAreas = useMemo(() => {
+    const storedServiceAreas = Array.isArray(user?.location?.serviceAreas) ? user.location.serviceAreas : [];
 
-  useEffect(() => {
-    const loadSavedLocations = async () => {
-      if (!userId) {
-        setIsLoadingSaved(false);
-        return;
-      }
-
-      try {
-        const response = await api.get("/drivers/search");
-        const currentDriver = Array.isArray(response.data)
-          ? response.data.find((driver) => String(driver.userId) === String(userId))
-          : null;
-
-        const existingAreas = Array.isArray(currentDriver?.serviceAreas)
-          ? currentDriver.serviceAreas
-              .map((item) => ({
-                name: item?.name || "",
-                lat: item?.lat ? String(item.lat) : "",
-                lng: item?.lng ? String(item.lng) : "",
-              }))
-              .filter((item) => item.name)
-          : [];
-
-        if (existingAreas.length) {
-          setServiceAreas(existingAreas);
-        } else if (currentDriver?.location?.city) {
-          setServiceAreas([
-            {
-              name: currentDriver.location.city,
-              lat: currentDriver?.location?.coordinates?.lat ? String(currentDriver.location.coordinates.lat) : "",
-              lng: currentDriver?.location?.coordinates?.lng ? String(currentDriver.location.coordinates.lng) : "",
-            },
-          ]);
-        }
-      } catch (err) {
-        setMessage(err.response?.data?.message || "Error loading saved service areas");
-        setMessageType("error");
-      } finally {
-        setIsLoadingSaved(false);
-      }
-    };
-
-    loadSavedLocations();
-  }, [userId]);
-
-  useEffect(() => {
-    const searchText = draftLocation.city.trim();
-    if (searchText.length < 2) {
-      setSuggestions([]);
-      return undefined;
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(async () => {
-      try {
-        setIsSearching(true);
-        const url = `${OSM_SEARCH_URL}?format=jsonv2&addressdetails=1&limit=6&q=${encodeURIComponent(searchText)}`;
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            Accept: "application/json",
+    if (storedServiceAreas.length > 0) {
+      return storedServiceAreas
+        .map((area) => ({
+          city: String(area?.city || area?.name || "").trim(),
+          coordinates: {
+            lat: Number.isFinite(Number(area?.coordinates?.lat)) ? Number(area.coordinates.lat) : null,
+            lng: Number.isFinite(Number(area?.coordinates?.lng)) ? Number(area.coordinates.lng) : null,
           },
-        });
-
-        if (!response.ok) {
-          throw new Error("Suggestion fetch failed");
-        }
-
-        const data = await response.json();
-        setSuggestions(Array.isArray(data) ? data : []);
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          setSuggestions([]);
-        }
-      } finally {
-        setIsSearching(false);
-      }
-    }, 350);
-
-    return () => {
-      clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [draftLocation.city]);
-
-  const handleSuggestionSelect = (item) => {
-    setDraftLocation((current) => ({
-      ...current,
-      city: item.display_name || current.city,
-      lat: item.lat || current.lat,
-      lng: item.lon || current.lng,
-    }));
-    setShowSuggestions(false);
-    setSuggestions([]);
-  };
-
-  const persistServiceAreas = async (nextAreas) => {
-    if (!userId) {
-      setMessage("User not found. Please login first.");
-      setMessageType("error");
-      return false;
+        }))
+        .filter((area) => area.city);
     }
 
+    const primaryCity = String(user?.location?.city || "").trim();
+
+    return primaryCity
+      ? [
+          {
+            city: primaryCity,
+            coordinates: {
+              lat: Number.isFinite(Number(user?.location?.coordinates?.lat)) ? Number(user.location.coordinates.lat) : null,
+              lng: Number.isFinite(Number(user?.location?.coordinates?.lng)) ? Number(user.location.coordinates.lng) : null,
+            },
+          },
+        ]
+      : [];
+  }, [user]);
+
+  const [serviceAreas, setServiceAreas] = useState(initialServiceAreas);
+  const [draftLocation, setDraftLocation] = useState("");
+  const [draftCoordinates, setDraftCoordinates] = useState({ lat: null, lng: null });
+  const [message, setMessage] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name !== "city") {
+      return;
+    }
+
+    setDraftLocation(value);
+
+    if (e.nativeEvent) {
+      setDraftCoordinates({ lat: null, lng: null });
+    }
+  };
+
+  const syncServiceAreas = async (nextServiceAreas) => {
     try {
       await api.post("/drivers/location", {
         userId,
-        serviceAreas: nextAreas,
+        city: nextServiceAreas[0]?.city || "",
+        lat: nextServiceAreas[0]?.coordinates?.lat ?? null,
+        lng: nextServiceAreas[0]?.coordinates?.lng ?? null,
+        serviceAreas: nextServiceAreas,
       });
-      setMessage("Service areas updated successfully!");
-      setMessageType("success");
-      return true;
+      setMessage(`Saved ${nextServiceAreas.length} service area${nextServiceAreas.length === 1 ? "" : "s"}.`);
     } catch (err) {
       setMessage(err.response?.data?.message || "Error updating location");
-      setMessageType("error");
-      return false;
     }
   };
 
-  const addLocation = async () => {
-    const trimmedName = draftLocation.city.trim();
-    if (!trimmedName) {
-      setMessage("Type and select a service area first.");
-      setMessageType("error");
+  const handleAddLocation = async () => {
+    const trimmedLocation = draftLocation.trim();
+
+    if (!trimmedLocation) {
+      setMessage("Type a location before adding it.");
       return;
     }
 
-    const alreadyExists = serviceAreas.some(
-      (item) => String(item.name || "").toLowerCase() === trimmedName.toLowerCase()
-    );
-    if (alreadyExists) {
-      setMessage("This location is already added.");
-      setMessageType("error");
-      return;
-    }
-
-    const nextAreas = [
-      ...serviceAreas,
+    const nextServiceAreas = [
+      ...serviceAreas.filter((area) => area.city.toLowerCase() !== trimmedLocation.toLowerCase()),
       {
-        name: trimmedName,
-        lat: draftLocation.lat,
-        lng: draftLocation.lng,
+        city: trimmedLocation,
+        coordinates: draftCoordinates,
       },
     ];
 
-    const saved = await persistServiceAreas(nextAreas);
-    if (!saved) {
-      return;
-    }
-
-    setServiceAreas(nextAreas);
-    setDraftLocation({ city: "", lat: "", lng: "" });
-    setSuggestions([]);
-    setShowSuggestions(false);
+    setServiceAreas(nextServiceAreas);
+    setDraftLocation("");
+    setDraftCoordinates({ lat: null, lng: null });
+    await syncServiceAreas(nextServiceAreas);
   };
 
-  const removeLocation = async (index) => {
-    const nextAreas = serviceAreas.filter((_, itemIndex) => itemIndex !== index);
-    const saved = await persistServiceAreas(nextAreas);
-    if (!saved) {
+  const handleDeleteLocation = async (indexToDelete) => {
+    const nextServiceAreas = serviceAreas.filter((_, index) => index !== indexToDelete);
+
+    setServiceAreas(nextServiceAreas);
+    await syncServiceAreas(nextServiceAreas);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (draftLocation.trim()) {
+      await handleAddLocation();
       return;
     }
 
-    setServiceAreas(nextAreas);
+    await syncServiceAreas(serviceAreas);
   };
 
   return (
     <div style={containerStyle}>
       <h2>Location & Service Area</h2>
-      {message && <p style={{ color: messageType === "error" ? "#b91c1c" : "#166534" }}>{message}</p>}
+      {message && <p style={{ color: "green" }}>{message}</p>}
 
-      <div style={formStyle}>
-        <div style={autocompleteWrapStyle}>
-          <input
-            type="text"
+      <form onSubmit={handleSubmit} style={formStyle}>
+        <div style={inputRowStyle}>
+          <OpenStreetMapInput
             name="city"
-            placeholder="Type service area (city, zone, district)"
-            value={draftLocation.city}
-            onChange={handleDraftChange}
-            onFocus={() => setShowSuggestions(true)}
+            value={draftLocation}
+            onChange={handleChange}
+            onPlaceSelected={({ address, lat, lng }) => {
+              setDraftLocation(address || "");
+              setDraftCoordinates({
+                lat: Number.isFinite(Number(lat)) ? Number(lat) : null,
+                lng: Number.isFinite(Number(lng)) ? Number(lng) : null,
+              });
+            }}
+            placeholder="Search city or service area"
             style={inputStyle}
-            autoComplete="off"
           />
-          {showSuggestions && (draftLocation.city.trim().length >= 2) && (
-            <div style={suggestionPanelStyle}>
-              {isSearching ? (
-                <div style={suggestionHintStyle}>Searching OpenStreetMap...</div>
-              ) : suggestions.length ? (
-                suggestions.map((item) => (
-                  <button
-                    key={item.place_id}
-                    type="button"
-                    style={suggestionButtonStyle}
-                    onClick={() => handleSuggestionSelect(item)}
-                  >
-                    <span style={suggestionTitleStyle}>{item.display_name}</span>
-                  </button>
-                ))
-              ) : (
-                <div style={suggestionHintStyle}>No suggestions found.</div>
-              )}
-            </div>
-          )}
+          <button type="button" onClick={handleAddLocation} style={secondaryButtonStyle}>
+            Add Location
+          </button>
         </div>
-        <button type="button" onClick={addLocation} style={addButtonStyle}>
-          Add Service Area
-        </button>
-        <p style={{ fontSize: "12px", color: "#666" }}>
-          Add one or more service areas. Suggestions come from OpenStreetMap.
-        </p>
 
-        <div style={listWrapStyle}>
-          <h3 style={listHeadingStyle}>Added Service Areas</h3>
-          {isLoadingSaved ? (
-            <p style={listInfoStyle}>Loading saved locations...</p>
-          ) : serviceAreas.length === 0 ? (
-            <p style={listInfoStyle}>No service area added yet.</p>
+        <div style={listStyle}>
+          <h3 style={{ margin: 0 }}>Service Areas</h3>
+          {serviceAreas.length === 0 ? (
+            <p style={{ margin: 0, color: "#64748b" }}>No service areas added yet.</p>
           ) : (
-            serviceAreas.map((item, index) => (
-              <div key={`${item.name}-${index}`} style={listItemStyle}>
-                <div>{item.name}</div>
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(item.name)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={previewLinkStyle}
-                >
-                  View
-                </a>
-                <button type="button" onClick={() => removeLocation(index)} style={removeButtonStyle}>
-                  🗑
-                </button>
-              </div>
-            ))
+            <ul style={locationListStyle}>
+              {serviceAreas.map((location, index) => (
+                <li key={`${location.city}-${index}`} style={locationItemStyle}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{location.city}</div>
+                  </div>
+                  <div style={locationActionsStyle}>
+                    <OpenStreetMapLink label="Open" query={location.city} lat={location.coordinates?.lat} lng={location.coordinates?.lng} style={{ fontSize: "13px" }} />
+                    <button type="button" onClick={() => handleDeleteLocation(index)} style={deleteButtonStyle}>
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 };
@@ -273,52 +173,31 @@ const containerStyle = {
   backgroundColor: "#f9f9f9",
 };
 
-const formStyle = { display: "flex", flexDirection: "column", gap: "10px" };
-const inputStyle = { padding: "10px", borderRadius: "5px", border: "1px solid #ccc" };
-const addButtonStyle = { padding: "10px", backgroundColor: "#0f766e", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
-const removeButtonStyle = { padding: "8px 10px", backgroundColor: "#e2e8f0", color: "#334155", border: "1px solid #cbd5e1", borderRadius: "5px", cursor: "pointer", fontSize: "16px", lineHeight: 1 };
-const listWrapStyle = { marginTop: "10px", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "12px", backgroundColor: "#fff" };
-const listHeadingStyle = { margin: "0 0 8px" };
-const listInfoStyle = { margin: 0, color: "#64748b" };
-const listItemStyle = {
-  display: "grid",
-  gridTemplateColumns: "1fr auto auto",
-  gap: "8px",
-  alignItems: "center",
-  padding: "10px 0",
-  borderBottom: "1px solid #f1f5f9",
-};
-const autocompleteWrapStyle = { position: "relative" };
-const suggestionPanelStyle = {
-  position: "absolute",
-  top: "calc(100% + 4px)",
-  left: 0,
-  right: 0,
-  zIndex: 20,
-  border: "1px solid #d1d5db",
-  borderRadius: "8px",
+const formStyle = { display: "flex", flexDirection: "column", gap: "12px" };
+const inputRowStyle = { display: "flex", gap: "10px", alignItems: "flex-start", flexWrap: "wrap" };
+const listStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+  padding: "14px",
+  borderRadius: "10px",
+  border: "1px solid #e5e7eb",
   backgroundColor: "#fff",
-  boxShadow: "0 10px 24px rgba(0, 0, 0, 0.12)",
-  maxHeight: "240px",
-  overflowY: "auto",
 };
-const suggestionButtonStyle = {
-  width: "100%",
-  border: "none",
-  background: "transparent",
-  textAlign: "left",
+const locationListStyle = { listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" };
+const locationItemStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "12px",
   padding: "10px 12px",
-  cursor: "pointer",
-  borderBottom: "1px solid #f1f5f9",
+  borderRadius: "8px",
+  backgroundColor: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  alignItems: "center",
 };
-const suggestionTitleStyle = { color: "#0f172a", fontSize: "13px", lineHeight: 1.4 };
-const suggestionHintStyle = { padding: "10px 12px", color: "#64748b", fontSize: "13px" };
-const previewLinkStyle = {
-  display: "inline-block",
-  color: "#1d4ed8",
-  textDecoration: "none",
-  fontWeight: 600,
-  fontSize: "14px",
-};
+const locationActionsStyle = { display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" };
+const inputStyle = { flex: "1 1 260px", width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ccc" };
+const secondaryButtonStyle = { padding: "10px 14px", backgroundColor: "#0f766e", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
+const deleteButtonStyle = { padding: "8px 12px", backgroundColor: "#fee2e2", color: "#991b1b", border: "none", borderRadius: "5px", cursor: "pointer" };
 
 export default Location;
