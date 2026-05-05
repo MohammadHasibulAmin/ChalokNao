@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../services/api";
-import GoogleMapsLink from "../components/maps/GoogleMapsLink";
+import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
 
 const InterviewPanel = () => {
   const [interviews, setInterviews] = useState([]);
@@ -9,18 +9,20 @@ const InterviewPanel = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
 
-  const fetchInterviews = useCallback(async () => {
-    try {
-      const res = await api.get(`/interviews/driver/${userId}`);
-      setInterviews(res.data);
-    } catch (err) {
-      console.error("Error fetching interviews:", err);
-    }
-  }, [userId]);
-
   useEffect(() => {
-    fetchInterviews();
-  }, [fetchInterviews]);
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await api.get(`/interviews/driver/${userId}`);
+        if (mounted) setInterviews(res.data);
+      } catch (err) {
+        console.error("Error fetching interviews:", err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [userId]);
 
   const handleRespond = async (interviewId, status) => {
     try {
@@ -28,7 +30,12 @@ const InterviewPanel = () => {
         status: status,
       });
       setMessage(`Interview ${status}!`);
-      fetchInterviews();
+      try {
+        const res = await api.get(`/interviews/driver/${userId}`);
+        setInterviews(res.data);
+      } catch (err) {
+        console.error("Error fetching interviews:", err);
+      }
     } catch (err) {
       setMessage(err.response?.data?.message || "Error responding to interview");
     }
@@ -55,7 +62,7 @@ const InterviewPanel = () => {
               <strong>Location:</strong> {interview.location || "Online"}
             </p>
             {interview.location && (
-              <GoogleMapsLink
+              <OpenStreetMapLink
                 label="Open meeting location"
                 query={interview.location}
                 lat={interview.locationCoordinates?.lat}

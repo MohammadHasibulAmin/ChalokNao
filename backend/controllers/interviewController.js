@@ -8,16 +8,24 @@ exports.requestInterview = async (req, res) => {
       return res.status(400).json({ message: "ownerId, driverId, type and date are required" });
     }
 
+    // If interview is offline, require a location/address. For other types, location should be omitted.
+    if (String(type).toLowerCase() === "offline" && !location) {
+      return res.status(400).json({ message: "Location/address is required for offline interviews" });
+    }
+
+    const shouldStoreLocation = String(type).toLowerCase() === "offline";
+    const coords =
+      Number.isFinite(Number(locationLat)) && Number.isFinite(Number(locationLng))
+        ? { lat: Number(locationLat), lng: Number(locationLng) }
+        : null;
+
     const interview = await Interview.createInterview({
       ownerId,
       driverId,
       type,
       date: new Date(date),
-      location: location || null,
-      locationCoordinates:
-        Number.isFinite(Number(locationLat)) && Number.isFinite(Number(locationLng))
-          ? { lat: Number(locationLat), lng: Number(locationLng) }
-          : null,
+      location: shouldStoreLocation ? (location || null) : null,
+      locationCoordinates: shouldStoreLocation ? coords : null,
       status: "pending",
     });
 

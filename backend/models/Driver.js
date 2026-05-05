@@ -41,9 +41,18 @@ async function listByFilter(filter) {
     return (await getCollection()).find(filter).toArray();
 }
 
+async function addEmploymentEntry(userId, entry) {
+    await (await getCollection()).updateOne(
+        { userId },
+        { $push: { employmentHistory: { $each: [entry], $position: 0 } }, $set: { updatedAt: new Date() } }
+    );
+    return findByUserId(userId);
+}
+
 module.exports = {
     findByUserId,
     upsertByUserId,
     findById,
     listByFilter,
+    addEmploymentEntry,
 };

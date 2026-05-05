@@ -17,34 +17,12 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 exports.upload = upload;
 
-function calculateAgeFromBirthdate(birthdateValue) {
-  if (!birthdateValue) {
-    return null;
-  }
-
-  const birthDate = new Date(birthdateValue);
-  if (Number.isNaN(birthDate.getTime())) {
-    return null;
-  }
-
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age -= 1;
-  }
-
-  return age >= 0 ? age : null;
-}
-
 exports.createOrUpdateProfile = async (req, res) => {
   try {
     const {
       userId,
       name,
       age,
-      birthdate,
       experienceYears,
       licenseNumber,
       workType,
@@ -58,12 +36,9 @@ exports.createOrUpdateProfile = async (req, res) => {
     }
 
     const existing = await Driver.findByUserId(userId);
-    const derivedAge = calculateAgeFromBirthdate(birthdate || existing?.birthdate);
-    const fallbackAge = Number(age || existing?.age || 0);
     const payload = {
       name,
-      age: derivedAge ?? fallbackAge,
-      birthdate: birthdate || existing?.birthdate || null,
+      age: Number(age || 0),
       experienceYears: Number(experienceYears || 0),
       licenseNumber,
       workType,
@@ -121,23 +96,16 @@ exports.uploadDocuments = async (req, res) => {
     }
 
     const db = await connectDB();
-    const existingDriver = await db.collection("drivers").findOne({ userId });
     const licenseFile = req.files?.license?.[0]?.filename || null;
     const nidFile = req.files?.nid?.[0]?.filename || null;
-    const nextLicenseUrl = licenseFile || existingDriver?.documents?.licenseUrl || null;
-    const nextNidUrl = nidFile || existingDriver?.documents?.nidUrl || null;
-
-    if (!nextLicenseUrl && !nextNidUrl) {
-      return res.status(400).json({ message: "Submit at least one document before requesting verification." });
-    }
 
     await db.collection("drivers").updateOne(
       { userId },
       {
         $set: {
           documents: {
-            licenseUrl: nextLicenseUrl,
-            nidUrl: nextNidUrl,
+            licenseUrl: licenseFile,
+            nidUrl: nidFile,
             status: "pending",
           },
           updatedAt: new Date(),
@@ -239,18 +207,8 @@ exports.deleteEmployment = async (req, res) => {
 exports.addAvailability = async (req, res) => {
   try {
     const { userId, startDate, endDate } = req.body;
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required" });
-    }
 
     const db = await connectDB();
-    const existingDriver = await db.collection("drivers").findOne({ userId });
-    const workType = String(existingDriver?.workType || "").toLowerCase();
-
-    if (workType !== "temporary") {
-      return res.status(403).json({ message: "Availability is only applicable for temporary drivers." });
-    }
-
     await db.collection("drivers").updateOne(
       { userId },
       {
@@ -277,18 +235,8 @@ exports.addAvailability = async (req, res) => {
 
 exports.getAvailability = async (req, res) => {
   try {
-    if (!req.query.userId) {
-      return res.status(400).json({ message: "userId is required" });
-    }
-
     const db = await connectDB();
     const driver = await db.collection("drivers").findOne({ userId: req.query.userId });
-    const workType = String(driver?.workType || "").toLowerCase();
-
-    if (workType !== "temporary") {
-      return res.status(403).json({ message: "Availability is only applicable for temporary drivers." });
-    }
-
     return res.json(driver?.availability || []);
   } catch (err) {
     console.error("GET AVAILABILITY ERROR:", err);
@@ -299,43 +247,44 @@ exports.getAvailability = async (req, res) => {
 exports.setLocation = async (req, res) => {
   try {
     const { userId, city, lat, lng, serviceAreas } = req.body;
+    const parsedLat = Number(lat);
+    const parsedLng = Number(lng);
+    const existing = await Driver.findByUserId(userId);
 
-    const normalizedAreas = Array.isArray(serviceAreas)
+    const normalizedServiceAreas = Array.isArray(serviceAreas)
       ? serviceAreas
-          .map((item) => {
-            if (typeof item === "string") {
-              return { name: item, lat: null, lng: null };
+          .map((area) => {
+            const locationCity = String(area?.city || area?.name || area || "").trim();
+
+            if (!locationCity) {
+              return null;
             }
 
-            const parsedAreaLat = Number(item?.lat);
-            const parsedAreaLng = Number(item?.lng);
+            const areaLat = Number(area?.coordinates?.lat ?? area?.lat);
+            const areaLng = Number(area?.coordinates?.lng ?? area?.lng);
 
             return {
-              name: item?.name || "",
-              lat: Number.isFinite(parsedAreaLat) ? parsedAreaLat : null,
-              lng: Number.isFinite(parsedAreaLng) ? parsedAreaLng : null,
+              city: locationCity,
+              coordinates: {
+                lat: Number.isFinite(areaLat) ? areaLat : null,
+                lng: Number.isFinite(areaLng) ? areaLng : null,
+              },
             };
           })
-          .filter((item) => item.name)
+          .filter(Boolean)
       : [];
 
-    const fallbackLat = Number(lat);
-    const fallbackLng = Number(lng);
-    const primaryArea = normalizedAreas[0] || {
-      name: city || "",
-      lat: Number.isFinite(fallbackLat) ? fallbackLat : null,
-      lng: Number.isFinite(fallbackLng) ? fallbackLng : null,
-    };
+    const primaryCity = String(city || normalizedServiceAreas[0]?.city || existing?.location?.city || "").trim();
 
     const updated = await Driver.upsertByUserId(userId, {
       location: {
-        city: primaryArea.name,
+        city: primaryCity,
         coordinates: {
-          lat: primaryArea.lat,
-          lng: primaryArea.lng,
+          lat: Number.isFinite(parsedLat) ? parsedLat : null,
+          lng: Number.isFinite(parsedLng) ? parsedLng : null,
         },
+        serviceAreas: normalizedServiceAreas,
       },
-      serviceAreas: normalizedAreas.length ? normalizedAreas : (primaryArea.name ? [primaryArea] : []),
     });
 
     return res.json(updated);
@@ -437,7 +386,6 @@ exports.searchDrivers = async (req, res) => {
     if (location) {
       query.$or = [
         { "location.city": { $regex: location, $options: "i" } },
-        { "serviceAreas.name": { $regex: location, $options: "i" } },
         { location: { $regex: location, $options: "i" } },
         { locationCity: { $regex: location, $options: "i" } },
       ];

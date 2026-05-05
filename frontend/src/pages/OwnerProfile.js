@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import GoogleMapsLink from "../components/maps/GoogleMapsLink";
-import GooglePlacesInput from "../components/maps/GooglePlacesInput";
+import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
+import OpenStreetMapInput from "../components/maps/OpenStreetMapInput";
+import SupportChatWidget from "../components/chat/SupportChatWidget";
 
 const getProfileStorageKey = (ownerId) => {
   return `chaloknao_owner_profile_${ownerId || "anonymous"}`;
@@ -14,6 +15,29 @@ const getFeedbackStorageKey = (ownerId) => {
 const publicDirectoryKey = "chaloknao_public_owner_directory";
 
 const defaultFeedback = [];
+
+const toastContainerStyle = {
+  position: "fixed",
+  top: 20,
+  right: 20,
+  zIndex: 9999,
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  maxWidth: 400,
+};
+
+const toastStyle = {
+  padding: "14px 16px",
+  backgroundColor: "#0ea5e9",
+  color: "#fff",
+  borderRadius: 8,
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  animation: "slideIn 0.3s ease",
+};
 
 const cardStyle = {
   maxWidth: "980px",
@@ -81,19 +105,13 @@ const baseProfileFromUser = (currentUser, useCurrentUserDefaults) => ({
   name: useCurrentUserDefaults ? currentUser?.name || "" : "",
   email: useCurrentUserDefaults ? currentUser?.email || "" : "",
   company: "",
-  location: "",
   phone: "",
-  jobLocations: "",
+  jobLocation: "",
   description: "",
 });
 
 const normalizeProfileForPublicView = (profile, currentUser, feedbackList) => {
-  const jobLocations = Array.isArray(profile.jobLocations)
-    ? profile.jobLocations
-    : String(profile.jobLocations || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
+  const jobLocation = String(profile.jobLocation || "").trim();
 
   const ratingAvg = feedbackList.length
     ? feedbackList.reduce((sum, entry) => sum + Number(entry.rating || 0), 0) / feedbackList.length
@@ -103,10 +121,9 @@ const normalizeProfileForPublicView = (profile, currentUser, feedbackList) => {
     ownerId: currentUser?.id || currentUser?.email || "anonymous",
     name: profile.name || currentUser?.name || "Unnamed Owner",
     company: profile.company || "",
-    location: profile.location || "",
     phone: profile.phone || "",
     email: profile.email || currentUser?.email || "",
-    jobLocations,
+    jobLocations: jobLocation ? [jobLocation] : [],
     description: profile.description || "",
     ratingAvg,
     totalReviews: feedbackList.length,
@@ -138,6 +155,7 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
     setProfile(baseProfileFromUser(currentUser, isOwnerUser));
@@ -145,7 +163,13 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
 
     const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || "null");
     if (savedProfile && typeof savedProfile === "object") {
-      setProfile((currentProfile) => ({ ...currentProfile, ...savedProfile }));
+      setProfile((currentProfile) => ({
+        ...currentProfile,
+        ...savedProfile,
+        jobLocation:
+          savedProfile.jobLocation ||
+          (Array.isArray(savedProfile.jobLocations) ? savedProfile.jobLocations[0] : String(savedProfile.jobLocations || "")),
+      }));
     }
 
     const savedFeedback = JSON.parse(localStorage.getItem(feedbackStorageKey) || "null");
@@ -163,6 +187,22 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
     publishOwnerProfile(currentUser, profile, feedbackList);
   }, [feedbackList, feedbackStorageKey, profile, currentUser, isOwnerUser]);
 
+  useEffect(() => {
+    const handleAppNotif = (e) => {
+      const notif = e?.detail;
+      if (!notif) return;
+      setToasts((t) => [...t, { id: String(notif._id || Date.now()), ...notif }]);
+    };
+    window.addEventListener("app:notification", handleAppNotif);
+    return () => {
+      window.removeEventListener("app:notification", handleAppNotif);
+    };
+  }, []);
+
+  const dismissToast = (toastId) => {
+    setToasts((t) => t.filter((x) => String(x.id) !== String(toastId)));
+  };
+
   const handleProfileChange = (event) => {
     const { name, value } = event.target;
     setProfile((currentProfile) => ({ ...currentProfile, [name]: value }));
@@ -174,10 +214,7 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
 
     const normalizedProfile = {
       ...profile,
-      jobLocations: String(profile.jobLocations || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
+      jobLocation: String(profile.jobLocation || "").trim(),
     };
 
     setProfile(normalizedProfile);
@@ -223,12 +260,38 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
     setComment("");
   };
 
-  const jobLocationsText = Array.isArray(profile.jobLocations)
-    ? profile.jobLocations.join(", ")
-    : profile.jobLocations;
+  const jobLocationValue = String(profile.jobLocation || "").trim();
 
   return (
     <div style={cardStyle}>
+      {/* Notification Toasts */}
+      <div style={toastContainerStyle}>
+        {toasts.map((toast) => (
+          <div key={toast.id} style={toastStyle}>
+            <div style={{ flex: 1 }}>
+              <strong style={{ color: "#fff" }}>
+                {toast.type === "message" ? "📨 New Message" : toast.message || "Notification"}
+              </strong>
+            </div>
+            <button
+              onClick={() => dismissToast(toast.id)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: 18,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Chat Widget */}
+      {currentUser && <SupportChatWidget user={currentUser} />}
+
       <div style={{ marginBottom: "20px" }}>
         <p style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "#0f766e", fontWeight: 800, marginBottom: "8px" }}>
           Public Owner Profile
@@ -257,27 +320,24 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
               <label style={labelStyle} htmlFor="company">Company</label>
               <input id="company" name="company" value={profile.company} onChange={handleProfileChange} style={inputStyle} placeholder="Car owner or business name" />
 
-              <label style={labelStyle} htmlFor="location">Location</label>
-              <GooglePlacesInput
-                id="location"
-                name="location"
-                value={profile.location}
-                onChange={handleProfileChange}
-                style={inputStyle}
-                placeholder="City or area"
-              />
-              {!!profile.location && (
-                <GoogleMapsLink label="Open owner location on OpenStreetMap" query={profile.location} style={{ fontSize: "13px" }} />
-              )}
-
               <label style={labelStyle} htmlFor="phone">Phone</label>
               <input id="phone" name="phone" value={profile.phone} onChange={handleProfileChange} style={inputStyle} placeholder="Contact number" />
 
               <label style={labelStyle} htmlFor="email">Email</label>
               <input id="email" name="email" value={profile.email} onChange={handleProfileChange} style={inputStyle} />
 
-              <label style={labelStyle} htmlFor="jobLocations">Job Locations</label>
-              <input id="jobLocations" name="jobLocations" value={jobLocationsText} onChange={handleProfileChange} style={inputStyle} placeholder="Comma-separated locations" />
+              <label style={labelStyle} htmlFor="jobLocation">Job Location</label>
+              <OpenStreetMapInput
+                id="jobLocation"
+                name="jobLocation"
+                value={jobLocationValue}
+                onChange={handleProfileChange}
+                style={inputStyle}
+                placeholder="Search job location with OpenStreetMap"
+              />
+              {!!jobLocationValue && (
+                <OpenStreetMapLink label="Open job location in OpenStreetMap" query={jobLocationValue} style={{ fontSize: "13px" }} />
+              )}
 
               <label style={labelStyle} htmlFor="description">Public Description</label>
               <textarea id="description" name="description" value={profile.description} onChange={handleProfileChange} rows={4} style={{ ...inputStyle, resize: "vertical" }} placeholder="Describe your hiring needs" />
@@ -289,27 +349,12 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
             <>
               <p><strong>Name:</strong> {profile.name || "Not provided yet"}</p>
               <p><strong>Company:</strong> {profile.company || "Not provided yet"}</p>
-              <p><strong>Location:</strong> {profile.location || "Not provided yet"}</p>
-              {!!profile.location && <GoogleMapsLink label="Open owner location on OpenStreetMap" query={profile.location} style={{ fontSize: "13px" }} />}
+              <p><strong>Job Location:</strong> {jobLocationValue || "Not provided yet"}</p>
+              {!!jobLocationValue && <OpenStreetMapLink label="Open job location in OpenStreetMap" query={jobLocationValue} style={{ fontSize: "13px" }} />}
               <p><strong>Phone:</strong> {profile.phone || "Not provided yet"}</p>
               <p><strong>Email:</strong> {profile.email || "Not provided yet"}</p>
             </>
           )}
-        </div>
-
-        <div style={panelStyle}>
-          <h3 style={{ marginTop: 0 }}>Job Locations for Drivers</h3>
-          <p style={{ color: "#475569" }}>Drivers can quickly see the places where this owner usually hires cars and drivers.</p>
-          <ul style={{ paddingLeft: "18px", marginBottom: 0 }}>
-            {(Array.isArray(profile.jobLocations) ? profile.jobLocations : jobLocationsText.split(",").map((item) => item.trim()).filter(Boolean)).map((location) => (
-              <li key={location} style={{ marginBottom: "6px" }}>
-                {location}
-                <span style={{ marginLeft: "8px" }}>
-                  <GoogleMapsLink label="map" query={location} style={{ fontSize: "12px" }} />
-                </span>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
 

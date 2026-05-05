@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
-import GoogleMapsLink from "../components/maps/GoogleMapsLink";
+import OpenStreetMapInput from "../components/maps/OpenStreetMapInput";
+import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
+import { getCompareDriverIds, toggleCompareDriverId } from "../utils/compareList";
 
 const publicDirectoryKey = "chaloknao_public_owner_directory";
 
@@ -110,6 +112,25 @@ const profileLinkStyle = {
   textDecoration: "none",
 };
 
+const actionRowStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "8px",
+  marginTop: "10px",
+};
+
+const secondaryButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#0f172a",
+};
+
+const outlinedButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: "#fff",
+  color: "#0f172a",
+  border: "1px solid #cbd5e1",
+};
+
 const getPublicOwners = () => {
   try {
     return JSON.parse(localStorage.getItem(publicDirectoryKey) || "[]");
@@ -194,6 +215,7 @@ const Marketplace = ({ currentRole }) => {
   const [filters, setFilters] = useState(defaultFilters);
   const [drivers, setDrivers] = useState([]);
   const [owners, setOwners] = useState(getPublicOwners());
+  const [compareIds, setCompareIds] = useState(() => getCompareDriverIds());
   const [loadingDrivers, setLoadingDrivers] = useState(false);
   const [error, setError] = useState("");
 
@@ -202,6 +224,12 @@ const Marketplace = ({ currentRole }) => {
     refreshOwners();
     window.addEventListener("storage", refreshOwners);
     return () => window.removeEventListener("storage", refreshOwners);
+  }, []);
+
+  useEffect(() => {
+    const refreshCompare = (event) => setCompareIds(Array.isArray(event?.detail) ? event.detail : getCompareDriverIds());
+    window.addEventListener("driver-compare-updated", refreshCompare);
+    return () => window.removeEventListener("driver-compare-updated", refreshCompare);
   }, []);
 
   useEffect(() => {
@@ -215,7 +243,11 @@ const Marketplace = ({ currentRole }) => {
 
       try {
         const res = await api.get("/drivers/search");
-        setDrivers(Array.isArray(res.data) ? res.data : []);
+        // Filter out temporary drivers (they appear on Short-Term Request page)
+        const fullTimeDrivers = Array.isArray(res.data) 
+          ? res.data.filter((d) => String(d.workType || "").toLowerCase() !== "temporary")
+          : [];
+        setDrivers(fullTimeDrivers);
       } catch (err) {
         setError(err.response?.data?.message || "Unable to load drivers");
       } finally {
@@ -331,7 +363,7 @@ const Marketplace = ({ currentRole }) => {
             placeholder="Search by name, company, or city"
             style={inputStyle}
           />
-          <input
+          <OpenStreetMapInput
             name="location"
             value={filters.location}
             onChange={handleChange}
@@ -413,11 +445,11 @@ const Marketplace = ({ currentRole }) => {
                   <div>
                     <h4 style={{ margin: 0 }}>{driver.name || driver._id || "Unnamed Driver"}</h4>
                     <p style={{ ...mutedStyle, margin: "6px 0 0" }}>
-                      {getDriverLocation(driver) || "Unknown city"} {driver.workType ? `• ${driver.workType}` : ""}
+                      {getDriverLocation(driver) || "Unknown city"}
                     </p>
                     {getDriverLocation(driver) && (
-                      <GoogleMapsLink
-                        label="View on Google Maps"
+                      <OpenStreetMapLink
+                        label="View in OpenStreetMap"
                         query={getDriverLocation(driver)}
                         lat={driver.location?.coordinates?.lat}
                         lng={driver.location?.coordinates?.lng}
@@ -425,7 +457,6 @@ const Marketplace = ({ currentRole }) => {
                       />
                     )}
                   </div>
-                  <span style={badgeStyle}>Priority #{index + 1}</span>
                 </div>
 
                 <div style={metaStyle}>
@@ -450,9 +481,18 @@ const Marketplace = ({ currentRole }) => {
                   Recommendation score: {score.toFixed(1)}
                 </p>
 
-                <Link to={`/driver/${driver._id}`} style={profileLinkStyle}>
-                  View Driver Profile
-                </Link>
+                <div style={actionRowStyle}>
+                  <Link to={`/driver/${driver._id}`} style={{ ...profileLinkStyle, padding: '8px 12px', borderRadius: 8, background: '#0f766e', color: '#fff' }}>
+                    View Profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => toggleCompareDriverId(driver._id, driver.name)}
+                    style={compareIds.includes(String(driver._id)) ? { ...secondaryButtonStyle, boxShadow: '0 6px 18px rgba(15,118,110,0.18)' } : outlinedButtonStyle}
+                  >
+                    {compareIds.includes(String(driver._id)) ? "Added to Compare" : "Add to Compare"}
+                  </button>
+                </div>
               </article>
             );
           })}
@@ -468,11 +508,11 @@ const Marketplace = ({ currentRole }) => {
                     <p style={{ ...mutedStyle, margin: "6px 0 0" }}>
                       {owner.company || "No company name"}{owner.location ? ` • ${owner.location}` : ""}
                     </p>
-                    {owner.location && <GoogleMapsLink label="View on Google Maps" query={owner.location} style={{ fontSize: "12px" }} />}
+                    {owner.location && <OpenStreetMapLink label="View in OpenStreetMap" query={owner.location} style={{ fontSize: "12px" }} />}
                   </div>
                   <span style={badgeStyle}>Priority #{index + 1}</span>
                 </div>
-
+                
                 <div style={metaStyle}>
                   <span style={badgeStyle}>{Number(owner.ratingAvg || 0).toFixed(1)} rating</span>
                   <span style={badgeStyle}>{owner.totalReviews || 0} reviews</span>
@@ -483,9 +523,11 @@ const Marketplace = ({ currentRole }) => {
                   {owner.description || "This owner has not added a public description yet."}
                 </p>
 
-                <Link to={`/owner-profile/${owner.ownerId}`} style={profileLinkStyle}>
-                  View Owner Profile
-                </Link>
+                <div style={actionRowStyle}>
+                  <Link to={`/owner-profile/${owner.ownerId}`} style={{ ...profileLinkStyle, padding: '8px 12px', borderRadius: 8, background: '#0f766e', color: '#fff' }}>
+                    View Profile
+                  </Link>
+                </div>
 
                 <p style={{ ...mutedStyle, marginBottom: 0 }}>
                   Recommendation score: {score.toFixed(1)}

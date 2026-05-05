@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
+import SupportChatWidget from "../components/chat/SupportChatWidget";
 
 const getPhotoUrl = (photo) => {
   if (!photo) {
@@ -119,15 +120,33 @@ const DriverProfile = () => {
   const [isReviewsOpen, setIsReviewsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("success");
-
+  const [toasts, setToasts] = useState([]);
   const [userId, setUserId] = useState("");
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user?.id) {
-      setUserId(user.id);
+    const userData = JSON.parse(localStorage.getItem("user"));
+    if (userData?.id) {
+      setUserId(userData.id);
+      setUser(userData);
     }
   }, []);
+
+  useEffect(() => {
+    const handleAppNotif = (e) => {
+      const notif = e?.detail;
+      if (!notif) return;
+      setToasts((t) => [...t, { id: String(notif._id || Date.now()), ...notif }]);
+    };
+    window.addEventListener("app:notification", handleAppNotif);
+    return () => {
+      window.removeEventListener("app:notification", handleAppNotif);
+    };
+  }, []);
+
+  const dismissToast = (toastId) => {
+    setToasts((t) => t.filter((x) => String(x.id) !== String(toastId)));
+  };
 
   useEffect(() => {
     if (!userId) {
@@ -296,6 +315,34 @@ const DriverProfile = () => {
 
   return (
     <div style={containerStyle}>
+      {/* Notification Toasts */}
+      <div style={toastContainerStyle}>
+        {toasts.map((toast) => (
+          <div key={toast.id} style={toastStyle}>
+            <div style={{ flex: 1 }}>
+              <strong style={{ color: "#fff" }}>
+                {toast.type === "message" ? "📨 New Message" : toast.message || "Notification"}
+              </strong>
+            </div>
+            <button
+              onClick={() => dismissToast(toast.id)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: 18,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Chat Widget */}
+      {user && <SupportChatWidget user={user} />}
+
       <div style={heroStyle}>
         <div style={avatarWrapStyle}>
           <button type="button" style={avatarButtonStyle} onClick={openUploadModal} aria-label="Upload profile photo">
@@ -457,6 +504,29 @@ const DriverProfile = () => {
       {isBadgeInfoOpen && <div style={dismissOverlayStyle} onClick={closeBadgeInfo} />}
     </div>
   );
+};
+
+const toastContainerStyle = {
+  position: "fixed",
+  top: 20,
+  right: 20,
+  zIndex: 9999,
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  maxWidth: 400,
+};
+
+const toastStyle = {
+  padding: "14px 16px",
+  backgroundColor: "#0ea5e9",
+  color: "#fff",
+  borderRadius: 8,
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  animation: "slideIn 0.3s ease",
 };
 
 const containerStyle = {

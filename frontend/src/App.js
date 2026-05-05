@@ -67,7 +67,6 @@ const roleLinks = {
     { to: "/interviews", label: "Interviews" },
     { to: "/analytics", label: "Analytics" },
     { to: "/training", label: "Training" },
-    { to: "/marketplace", label: "Marketplace" },
   ],
   owner: [
     { to: "/owner-profile", label: "Owner Profile" },
@@ -136,7 +135,6 @@ function App() {
   const isDriver = role === "driver";
   const isOwner = role === "owner";
   const isAdmin = role === "admin";
-  const landingPath = getLandingPath(role);
   const authRedirectPath = getAuthRedirectPath(user);
 
   useEffect(() => {
@@ -180,11 +178,35 @@ function App() {
 
     window.addEventListener("driver-verification-updated", handleVerificationEvent);
     window.addEventListener("driver-profile-updated", handleDriverProfileEvent);
+    // app-level notifications (from socket or login)
+    const handleAppNotif = (e) => {
+      const notif = e?.detail;
+      if (!notif) return;
+      setToasts((t) => [...t, { id: String(notif._id || Date.now()), ...notif }]);
+    };
+    window.addEventListener("app:notification", handleAppNotif);
     return () => {
       window.removeEventListener("driver-verification-updated", handleVerificationEvent);
       window.removeEventListener("driver-profile-updated", handleDriverProfileEvent);
+      window.removeEventListener("app:notification", handleAppNotif);
     };
   }, []);
+
+  const [toasts, setToasts] = useState([]);
+
+  const dismissToast = async (toast) => {
+    setToasts((t) => t.filter((x) => String(x.id) !== String(toast.id)));
+
+    try {
+      const token = localStorage.getItem("token");
+      if (token && toast?._id) {
+        await api.put(`/auth/notifications/${toast._id}/read`);
+      }
+    } catch (err) {
+      // keep dismissing locally even if marking read fails
+      console.warn("Failed to mark notification as read", err?.response?.data?.message || err.message);
+    }
+  };
 
   const driverNavLinks = useMemo(() => {
     return roleLinks.driver
@@ -251,10 +273,7 @@ function App() {
         )}
 
         <Routes>
-          <Route
-            path="/"
-            element={user ? <Navigate to={landingPath} replace /> : <Navigate to="/login" replace />}
-          />
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/register" element={<Register />} />
@@ -269,7 +288,10 @@ function App() {
           <Route path="/analytics" element={isDriver ? <Analytics /> : <Navigate to={authRedirectPath} replace />} />
           <Route path="/training" element={isDriver ? <Training /> : <Navigate to={authRedirectPath} replace />} />
           <Route path="/chat" element={isDriver ? <Chat /> : <Navigate to={authRedirectPath} replace />} />
-          <Route path="/marketplace" element={user ? <Marketplace currentRole={role} currentUser={user} /> : <Navigate to="/login" replace />} />
+          <Route
+            path="/marketplace"
+            element={isOwner ? <Marketplace currentRole={role} currentUser={user} /> : <Navigate to={authRedirectPath} replace />}
+          />
           <Route path="/owner-profile" element={user ? <OwnerProfile currentRole={role} currentUser={user} /> : <Navigate to="/login" replace />} />
           <Route path="/owner-profile/:ownerId" element={user ? <OwnerProfile currentRole={role} currentUser={user} /> : <Navigate to="/login" replace />} />
           <Route path="/driver/:driverId" element={user ? <DriverPublicProfile /> : <Navigate to="/login" replace />} />
@@ -287,6 +309,18 @@ function App() {
         </Routes>
 
         {user && <SupportChatWidget user={user} />}
+        {/* simple toast area */}
+        <div style={{ position: 'fixed', right: 20, top: 20, zIndex: 2000, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {toasts.map((t) => (
+            <div key={t.id} style={{ background: '#fff', padding: 12, borderRadius: 8, boxShadow: '0 6px 20px rgba(2,6,23,0.12)', minWidth: 260 }}>
+              <div style={{ fontWeight: 700 }}>{t.type === 'verification' ? 'Profile Verification' : 'Notification'}</div>
+              <div style={{ marginTop: 6 }}>{t.message}</div>
+              <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={() => dismissToast(t)} style={{ border: 'none', background: '#0a7f5a', color: '#fff', padding: '6px 10px', borderRadius: 6 }}>Dismiss</button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </Router>
   );

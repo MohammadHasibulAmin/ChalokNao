@@ -33,6 +33,20 @@ const HireManagement = () => {
     }
   };
 
+  const handlePay = async (hireId) => {
+    try {
+      const res = await api.post(`/hire/pay/${hireId}`);
+      if (res.data?.url) {
+        // redirect owner to Stripe Checkout
+        window.location.href = res.data.url;
+      } else {
+        setMessage("Unable to create payment session");
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Error initiating payment");
+    }
+  };
+
   return (
     <div style={containerStyle}>
       <h2>Hire Management</h2>
@@ -43,7 +57,7 @@ const HireManagement = () => {
       ) : (
         hires.map((hire) => (
           <div key={hire._id} style={listItemStyle}>
-            <h4>Hire from Owner {hire.ownerId}</h4>
+            <h4>Driver: {hire.driverId}</h4>
             <p>
               <strong>Salary:</strong> ${hire.salary}
             </p>
@@ -63,6 +77,15 @@ const HireManagement = () => {
               <button onClick={() => handleConfirm(hire._id)} style={buttonStyle}>
                 Accept Hire
               </button>
+            )}
+
+            {hire.status === "AwaitingPayment" && (
+              <div style={{ marginTop: 8 }}>
+                <button onClick={() => handlePay(hire._id)} style={{ ...buttonStyle, backgroundColor: "#0366d6" }}>
+                  Pay Now
+                </button>
+                <p style={{ marginTop: 8, color: "#666" }}>Payment will finalize this hire and create the contract.</p>
+              </div>
             )}
           </div>
         ))

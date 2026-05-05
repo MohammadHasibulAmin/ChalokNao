@@ -1,106 +1,69 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import GooglePlacesInput from "../components/maps/GooglePlacesInput";
-import GoogleMapsLink from "../components/maps/GoogleMapsLink";
 
 const InterviewSchedule = () => {
-  const [formData, setFormData] = useState({
-    driverId: "",
-    type: "online",
-    date: "",
-    location: "",
-    locationLat: "",
-    locationLng: "",
-  });
-  const [message, setMessage] = useState("");
+  const [scheduledInterviews, setScheduledInterviews] = useState([]);
+  const [loadingInterviews, setLoadingInterviews] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post("/interviews/owner/interview", {
-        ownerId: userId,
-        driverId: formData.driverId,
-        type: formData.type,
-        date: formData.date,
-        location: formData.location,
-        locationLat: formData.locationLat,
-        locationLng: formData.locationLng,
-      });
-      setMessage("Interview scheduled!");
-      setFormData({ driverId: "", type: "online", date: "", location: "", locationLat: "", locationLng: "" });
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Error scheduling interview");
-    }
-  };
+  useEffect(() => {
+    const fetchScheduledInterviews = async () => {
+      if (!userId) return;
+      setLoadingInterviews(true);
+      try {
+        const res = await api.get(`/interviews/owner/${userId}`);
+        setScheduledInterviews(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Error fetching interviews:", err.response?.data?.message || err.message);
+        setScheduledInterviews([]);
+      } finally {
+        setLoadingInterviews(false);
+      }
+    };
+    fetchScheduledInterviews();
+  }, [userId]);
 
   return (
     <div style={containerStyle}>
-      <h2>Schedule Interview</h2>
-      {message && <p style={{ color: "green" }}>{message}</p>}
-
-      <form onSubmit={handleSubmit} style={formStyle}>
-        <input
-          type="text"
-          name="driverId"
-          placeholder="Driver ID"
-          value={formData.driverId}
-          onChange={handleChange}
-          required
-          style={inputStyle}
-        />
-        <select name="type" value={formData.type} onChange={handleChange} style={inputStyle}>
-          <option value="online">Online</option>
-          <option value="offline">Offline</option>
-          <option value="chat">Chat</option>
-        </select>
-        <input
-          type="datetime-local"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          required
-          style={inputStyle}
-        />
-        <GooglePlacesInput
-          name="location"
-          placeholder="Location (if offline)"
-          value={formData.location}
-          onChange={handleChange}
-          onPlaceSelected={({ address, lat, lng }) => {
-            setFormData((current) => ({
-              ...current,
-              location: address || current.location,
-              locationLat: Number.isFinite(lat) ? String(lat) : current.locationLat,
-              locationLng: Number.isFinite(lng) ? String(lng) : current.locationLng,
-            }));
-          }}
-          style={inputStyle}
-        />
-        {!!formData.location && (
-          <GoogleMapsLink
-            label="Check location on Google Maps"
-            query={formData.location}
-            lat={formData.locationLat}
-            lng={formData.locationLng}
-          />
-        )}
-        <button type="submit" style={buttonStyle}>
-          Schedule Interview
-        </button>
-      </form>
+      <h2>Scheduled Interviews</h2>
+      <h3>Your Scheduled Interviews</h3>
+      {loadingInterviews ? (
+        <p style={{ color: "#6b7280" }}>Loading interviews...</p>
+      ) : scheduledInterviews.length === 0 ? (
+        <p style={{ color: "#6b7280" }}>No interviews scheduled yet.</p>
+      ) : (
+        <div style={interviewsListStyle}>
+          {scheduledInterviews.map((interview) => (
+            <div key={interview._id} style={interviewCardStyle}>
+              <div style={{ flex: 1 }}>
+                <h4 style={{ margin: "0 0 8px 0", color: "#1f2937" }}>
+                  Driver: {interview.driverName || interview.driverId || "Unknown"}
+                </h4>
+                <p style={{ margin: "4px 0", color: "#6b7280", fontSize: 14 }}>
+                  <strong>Date & Time:</strong> {new Date(interview.date).toLocaleString()}
+                </p>
+                <p style={{ margin: "4px 0", color: "#6b7280", fontSize: 14 }}>
+                  <strong>Type:</strong>{" "}
+                  <span style={interviewTypeBadgeStyle(interview.type)}>{interview.type}</span>
+                </p>
+                {interview.type === "offline" && interview.location && (
+                  <p style={{ margin: "4px 0", color: "#6b7280", fontSize: 14 }}>
+                    <strong>Location:</strong> {interview.location}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 const containerStyle = {
-  maxWidth: "600px",
+  maxWidth: "800px",
   margin: "20px auto",
   padding: "20px",
   border: "1px solid #ddd",
@@ -108,8 +71,39 @@ const containerStyle = {
   backgroundColor: "#f9f9f9",
 };
 
-const formStyle = { display: "flex", flexDirection: "column", gap: "10px" };
-const inputStyle = { padding: "10px", borderRadius: "5px", border: "1px solid #ccc" };
-const buttonStyle = { padding: "10px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
+const interviewsListStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+  marginTop: "16px",
+};
+
+const interviewCardStyle = {
+  padding: "16px",
+  border: "1px solid #e5e7eb",
+  borderRadius: "8px",
+  backgroundColor: "#f9fafb",
+  display: "flex",
+  gap: "12px",
+};
+
+const interviewTypeBadgeStyle = (type) => {
+  const typeColors = {
+    online: { bg: "#dbeafe", text: "#0c4a6e" },
+    offline: { bg: "#dcfce7", text: "#166534" },
+    chat: { bg: "#f3e8ff", text: "#6b21a8" },
+  };
+  const colors = typeColors[type] || typeColors.online;
+  return {
+    display: "inline-block",
+    padding: "4px 8px",
+    backgroundColor: colors.bg,
+    color: colors.text,
+    borderRadius: "4px",
+    fontSize: "12px",
+    fontWeight: 600,
+    textTransform: "capitalize",
+  };
+};
 
 export default InterviewSchedule;

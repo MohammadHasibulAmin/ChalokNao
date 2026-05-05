@@ -7,6 +7,7 @@ const { Server } = require("socket.io");
 
 const connectDB = require("./config/db");
 const setupSupportChatSocket = require("./socket/supportChatSocket");
+const socketManager = require("./socket/socketManager");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,7 +39,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
-
+socketManager.init(io);
 setupSupportChatSocket(io);
 
 connectDB()
