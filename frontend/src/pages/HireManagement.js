@@ -23,13 +23,23 @@ const HireManagement = () => {
 
   const handleConfirm = async (hireId) => {
     try {
-      await api.put(`/hire/confirm/${hireId}`, {
-        actor: "driver",
-      });
-      setMessage("Hire confirmed!");
-      fetchHires();
+      // Send a job offer to the driver
+      const hire = hires.find(h => h._id === hireId);
+      if (hire) {
+        await api.post(`/offers`, {
+          ownerId: userId,
+          driverId: hire.driverUserId || hire.driverId,
+          hireId: hireId,
+          salary: hire.salary,
+          duration: hire.duration,
+          driverName: hire.driverName,
+        });
+
+        setMessage("Job offer sent to driver!");
+        fetchHires();
+      }
     } catch (err) {
-      setMessage(err.response?.data?.message || "Error confirming hire");
+      setMessage(err.response?.data?.message || "Error sending job offer");
     }
   };
 
@@ -57,7 +67,7 @@ const HireManagement = () => {
       ) : (
         hires.map((hire) => (
           <div key={hire._id} style={listItemStyle}>
-            <h4>Driver: {hire.driverId}</h4>
+            <h4>Driver: {hire.driverName || hire.driverId}</h4>
             <p>
               <strong>Salary:</strong> ${hire.salary}
             </p>
@@ -71,11 +81,11 @@ const HireManagement = () => {
               <strong>Owner Confirmed:</strong> {hire.ownerConfirm ? "✓" : "✗"}
             </p>
             <p>
-              <strong>You Confirmed:</strong> {hire.driverConfirm ? "✓" : "✗"}
+              <strong>Driver Accepted Offer:</strong> {hire.driverConfirm ? "✓" : "✗"}
             </p>
             {hire.status === "Pending" && !hire.driverConfirm && (
               <button onClick={() => handleConfirm(hire._id)} style={buttonStyle}>
-                Accept Hire
+                Send Job Offer
               </button>
             )}
 

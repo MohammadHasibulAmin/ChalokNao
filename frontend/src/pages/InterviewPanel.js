@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import api from "../services/api";
 import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
+import DirectChatModal from "../components/chat/DirectChatModal";
 
 const InterviewPanel = () => {
   const [interviews, setInterviews] = useState([]);
   const [message, setMessage] = useState("");
+  const [activeChatInterview, setActiveChatInterview] = useState(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
@@ -13,16 +15,27 @@ const InterviewPanel = () => {
     let mounted = true;
     (async () => {
       try {
-        const res = await api.get(`/interviews/driver/${userId}`);
+        // fetch driver document to obtain driver._id (interviews are stored against driver._id)
+        const driverRes = await api.get(`/drivers/user/${userId}`);
+        const driverDoc = driverRes.data;
+        if (!driverDoc || !driverDoc._id) {
+          if (mounted) setInterviews([]);
+          return;
+        }
+        const res = await api.get(`/interviews/driver/${driverDoc._id}`);
         if (mounted) setInterviews(res.data);
       } catch (err) {
-        console.error("Error fetching interviews:", err);
+        console.error("Error fetching interviews:", err.response?.data?.message || err.message);
       }
     })();
     return () => {
       mounted = false;
     };
   }, [userId]);
+
+  const pendingCount = useMemo(() => {
+    return interviews.filter((interview) => String(interview.status || "").toLowerCase() === "pending").length;
+  }, [interviews]);
 
   const handleRespond = async (interviewId, status) => {
     try {
@@ -31,8 +44,15 @@ const InterviewPanel = () => {
       });
       setMessage(`Interview ${status}!`);
       try {
-        const res = await api.get(`/interviews/driver/${userId}`);
-        setInterviews(res.data);
+        // refetch driver document then reload interviews by driver._id
+        const driverRes = await api.get(`/drivers/user/${userId}`);
+        const driverDoc = driverRes.data;
+        if (driverDoc && driverDoc._id) {
+          const res = await api.get(`/interviews/driver/${driverDoc._id}`);
+          setInterviews(res.data);
+        } else {
+          setInterviews([]);
+        }
       } catch (err) {
         console.error("Error fetching interviews:", err);
       }
@@ -43,15 +63,23 @@ const InterviewPanel = () => {
 
   return (
     <div style={containerStyle}>
-      <h2>Interview Requests</h2>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0 }}>Interview Requests</h2>
+        {pendingCount > 0 && (
+          <span style={newBadgeStyle}>{pendingCount} New</span>
+        )}
+      </div>
       {message && <p style={{ color: "green" }}>{message}</p>}
 
       {interviews.length === 0 ? (
         <p>No interview requests yet.</p>
       ) : (
         interviews.map((interview) => (
-          <div key={interview._id} style={listItemStyle}>
-            <h4>Interview from Owner {interview.ownerId}</h4>
+          <div key={interview._id} style={{ ...listItemStyle, borderColor: String(interview.status || "").toLowerCase() === "pending" ? "#f59e0b" : "#ddd" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <h4 style={{ margin: 0 }}>Interview request from {interview.ownerName || interview.ownerId}</h4>
+              {String(interview.status || "").toLowerCase() === "pending" && <span style={newBadgeStyle}>NEW</span>}
+            </div>
             <p>
               <strong>Type:</strong> {interview.type}
             </p>
@@ -89,9 +117,27 @@ const InterviewPanel = () => {
                 </button>
               </div>
             )}
+            {String(interview.status || "").toLowerCase() === "accepted" && String(interview.type || "").toLowerCase() === "chat" && (
+              <button
+                type="button"
+                onClick={() => setActiveChatInterview(interview)}
+                style={{ ...buttonStyle, backgroundColor: "#0f766e", marginTop: "10px" }}
+              >
+                Open Chat
+              </button>
+            )}
           </div>
         ))
       )}
+
+      <DirectChatModal
+        open={Boolean(activeChatInterview)}
+        onClose={() => setActiveChatInterview(null)}
+        currentUser={user}
+        counterpartId={activeChatInterview?.ownerUserId || activeChatInterview?.ownerId}
+        counterpartName={activeChatInterview?.ownerName || "Owner"}
+        title={`Chat with ${activeChatInterview?.ownerName || "Owner"}`}
+      />
     </div>
   );
 };
@@ -114,5 +160,16 @@ const containerStyle = {
 
 const listItemStyle = { padding: "15px", border: "1px solid #ddd", borderRadius: "5px", marginBottom: "15px", backgroundColor: "#fff" };
 const buttonStyle = { padding: "8px 15px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
+const newBadgeStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "4px 10px",
+  borderRadius: "999px",
+  backgroundColor: "#fee2e2",
+  color: "#b91c1c",
+  fontSize: "12px",
+  fontWeight: 700,
+  border: "1px solid #fecaca",
+};
 
 export default InterviewPanel;

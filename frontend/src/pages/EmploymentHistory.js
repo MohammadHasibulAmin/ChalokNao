@@ -3,6 +3,7 @@ import api from "../services/api";
 
 const EmploymentHistory = () => {
   const [employmentList, setEmploymentList] = useState([]);
+  const [jobOffers, setJobOffers] = useState([]);
   const [formData, setFormData] = useState({
     employerName: "",
     duration: "",
@@ -31,9 +32,28 @@ const EmploymentHistory = () => {
     }
   }, [userId]);
 
+  const loadJobOffers = useCallback(async () => {
+    if (!userId) {
+      setJobOffers([]);
+      return;
+    }
+
+    try {
+      const response = await api.get(`/offers/driver/list?userId=${userId}`);
+      const pendingOffers = Array.isArray(response.data)
+        ? response.data.filter((offer) => offer.status === "pending")
+        : [];
+      setJobOffers(pendingOffers);
+    } catch (err) {
+      console.error("Error loading job offers:", err);
+      setJobOffers([]);
+    }
+  }, [userId]);
+
   useEffect(() => {
     loadEmploymentHistory();
-  }, [loadEmploymentHistory]);
+    loadJobOffers();
+  }, [loadEmploymentHistory, loadJobOffers]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -74,10 +94,62 @@ const EmploymentHistory = () => {
     }
   };
 
+  const handleOfferResponse = async (offerId, status) => {
+    try {
+      await api.put(`/offers/${offerId}/status`, {
+        status,
+      });
+      setMessage(`Job offer ${status}!`);
+      loadJobOffers();
+    } catch (err) {
+      setMessage(err.response?.data?.message || `Error ${status} job offer`);
+    }
+  };
+
   return (
     <div style={containerStyle}>
-      <h2>Employment History</h2>
+      <h2>Employment & Job Offers</h2>
       {message && <p style={{ color: "green" }}>{message}</p>}
+
+      {/* Job Offers Section */}
+      <div style={{ marginBottom: "30px" }}>
+        <h3 style={{ borderBottom: "2px solid #007bff", paddingBottom: "10px" }}>Pending Job Offers</h3>
+        {jobOffers.length === 0 ? (
+          <p style={{ color: "#666" }}>No pending job offers.</p>
+        ) : (
+          jobOffers.map((offer) => (
+            <div key={offer._id} style={jobOfferCardStyle}>
+              <div>
+                <h4 style={{ margin: "0 0 8px 0" }}>Job Offer from Owner</h4>
+                <p style={{ margin: "4px 0", color: "#666" }}>
+                  <strong>Salary:</strong> ${offer.salary}
+                </p>
+                <p style={{ margin: "4px 0", color: "#666" }}>
+                  <strong>Duration:</strong> {offer.duration || "Not specified"}
+                </p>
+                <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
+                  <button
+                    onClick={() => handleOfferResponse(offer._id, "accepted")}
+                    style={{ ...offerButtonStyle, backgroundColor: "#28a745" }}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleOfferResponse(offer._id, "rejected")}
+                    style={{ ...offerButtonStyle, backgroundColor: "#dc3545" }}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Employment History Section */}
+      <div>
+        <h3 style={{ borderBottom: "2px solid #28a745", paddingBottom: "10px" }}>My Employment History</h3>
 
       <form onSubmit={handleSubmit} style={formStyle}>
         <input
@@ -125,6 +197,7 @@ const EmploymentHistory = () => {
           ))
         )}
       </div>
+      </div>
     </div>
   );
 };
@@ -143,5 +216,26 @@ const inputStyle = { padding: "10px", borderRadius: "5px", border: "1px solid #c
 const buttonStyle = { padding: "10px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
 const deleteButtonStyle = { ...buttonStyle, backgroundColor: "#dc3545", marginTop: "10px" };
 const listItemStyle = { padding: "15px", border: "1px solid #ddd", borderRadius: "5px", marginBottom: "10px", backgroundColor: "#fff" };
+
+const jobOfferCardStyle = {
+  padding: "15px",
+  border: "2px solid #007bff",
+  borderRadius: "8px",
+  marginBottom: "12px",
+  backgroundColor: "#f0f7ff",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+};
+
+const offerButtonStyle = {
+  padding: "8px 12px",
+  border: "none",
+  borderRadius: "5px",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: "14px",
+  fontWeight: "600",
+};
 
 export default EmploymentHistory;

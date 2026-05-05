@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
+import { io } from "socket.io-client";
 import api from "./services/api";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -25,6 +26,7 @@ import DriverComparison from "./pages/DriverComparison";
 import OwnerProfile from "./pages/OwnerProfile";
 import SupportChatWidget from "./components/chat/SupportChatWidget";
 import DriverPublicProfile from "./pages/DriverPublicProfile";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const navStyle = {
   display: "flex",
@@ -114,6 +116,8 @@ const getAuthRedirectPath = (user) => {
   return getLandingPath(user.role);
 };
 
+const SOCKET_URL = "http://localhost:5000";
+
 function App() {
   const [user, setUser] = useState(() => {
     return JSON.parse(localStorage.getItem("user")) || null;
@@ -124,6 +128,7 @@ function App() {
   const [driverWorkType, setDriverWorkType] = useState(() => {
     return localStorage.getItem("driverWorkType") || "";
   });
+  const socketRef = useRef(null);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -191,6 +196,31 @@ function App() {
       window.removeEventListener("app:notification", handleAppNotif);
     };
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!user?.id || !token) {
+      socketRef.current?.disconnect?.();
+      socketRef.current = null;
+      return undefined;
+    }
+
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"],
+    });
+
+    socketRef.current = socket;
+
+    socket.on("interview:updated", (notif) => {
+      window.dispatchEvent(new CustomEvent("app:notification", { detail: notif }));
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user?.id]);
 
   const [toasts, setToasts] = useState([]);
 
@@ -303,7 +333,10 @@ function App() {
           <Route path="/schedule-interview" element={isOwner ? <InterviewSchedule /> : <Navigate to={authRedirectPath} replace />} />
           <Route path="/short-term" element={isOwner ? <ShortTermRequest /> : <Navigate to={authRedirectPath} replace />} />
           <Route path="/hiring" element={isOwner ? <HireManagement /> : <Navigate to={authRedirectPath} replace />} />
+          <Route path="/hire-management" element={isOwner ? <HireManagement /> : <Navigate to={authRedirectPath} replace />} />
           <Route path="/contracts" element={isOwner ? <ContractDashboard /> : <Navigate to={authRedirectPath} replace />} />
+          <Route path="/contract-dashboard" element={isOwner ? <ContractDashboard /> : <Navigate to={authRedirectPath} replace />} />
+          <Route path="/payment-success" element={user ? <PaymentSuccess /> : <Navigate to="/login" replace />} />
 
           <Route path="/admin" element={isAdmin ? <AdminVerification /> : <Navigate to={authRedirectPath} replace />} />
         </Routes>

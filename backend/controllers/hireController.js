@@ -2,6 +2,8 @@ const Hire = require("../models/Hire");
 const Transaction = require("../models/Transaction");
 const Contract = require("../models/Contract");
 const Driver = require("../models/Driver");
+const connectDB = require("../config/db");
+const { ObjectId } = require("mongodb");
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY || "";
 let stripe = null;
@@ -13,7 +15,7 @@ const COMMISSION_PERCENTAGE = 0.15; // 15% commission
 
 exports.createHire = async (req, res) => {
   try {
-    const { ownerId, driverId, salary, duration } = req.body;
+    const { ownerId, driverId, driverName, driverUserId, interviewId, salary, duration } = req.body;
     if (!ownerId || !driverId) {
       return res.status(400).json({ message: "ownerId and driverId are required" });
     }
@@ -21,6 +23,9 @@ exports.createHire = async (req, res) => {
     const hire = await Hire.createHire({
       ownerId,
       driverId,
+      driverName: driverName || null,
+      driverUserId: driverUserId || null,
+      interviewId: interviewId || null,
       salary: Number(salary || 0),
       duration: duration || null,
       ownerConfirm: true,
@@ -207,6 +212,51 @@ exports.finalizePayment = async (req, res) => {
         });
       } catch (err) {
         console.warn("Driver employment update failed:", err.message);
+      }
+
+      // Update driver status to unavailable
+      try {
+        const driver = await Driver.findByUserId(hire.driverId);
+        if (driver) {
+          await Driver.upsertByUserId(hire.driverId, {
+            ...driver,
+            status: "Unavailable",
+          });
+        }
+      } catch (err) {
+        console.warn("Driver status update failed:", err.message);
+      }
+
+      // Send notification to driver about contract creation
+      try {
+        const db = await connectDB();
+        const driverIdStr = String(hire.driverId || "");
+        if (driverIdStr) {
+          const notif = {
+            _id: new ObjectId(),
+            type: "contract",
+            status: "created",
+            message: "Your contract has been created and is now active.",
+            data: { hireId: String(hire._id) },
+            read: false,
+            createdAt: new Date(),
+          };
+
+          await db.collection("user").updateOne(
+            { _id: new ObjectId(driverIdStr) },
+            { $push: { notifications: notif }, $set: { updatedAt: new Date() } }
+          );
+
+          try {
+            const socketManager = require("../socket/socketManager");
+            const io = socketManager.getIo();
+            io.to(`user:${driverIdStr}`).emit("contract:created", notif);
+          } catch (err) {
+            console.warn("Contract creation socket emit failed:", err.message);
+          }
+        }
+      } catch (err) {
+        console.warn("Contract notification creation failed:", err.message);
       }
     }
 
