@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import { Link } from "react-router-dom";
@@ -120,14 +130,14 @@ const containerStyle = {
   maxWidth: "600px",
   margin: "20px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#0D0D0D",
 };
 
 
-const listItemStyle = { padding: "12px", border: "1px solid #ddd", borderRadius: "5px", marginBottom: "10px", backgroundColor: "#fff" };
-const compareButtonStyle = { padding: "10px", backgroundColor: "#fff", color: "#0f172a", border: "1px solid #cbd5e1", borderRadius: "5px", cursor: "pointer" };
-const compareActiveButtonStyle = { ...compareButtonStyle, backgroundColor: "#0f766e", color: "#fff", borderColor: "#0f766e" };
+const listItemStyle = { padding: "12px", border: "1px solid rgba(242,240,236,0.12)", borderRadius: "5px", marginBottom: "10px", backgroundColor: "#141414" };
+const compareButtonStyle = { padding: "10px", backgroundColor: "#141414", color: "#F2F0EC", border: "1px solid rgba(242,240,236,0.14)", borderRadius: "5px", cursor: "pointer" };
+const compareActiveButtonStyle = { ...compareButtonStyle, backgroundColor: "#4ABB78", color: "#111", borderColor: "#4ABB78" };
 
 export default Shortlist;

@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useEffect, useRef, useState } from "react";
 import { searchOpenStreetMapPlaces } from "../../utils/openStreetMap";
 
@@ -227,10 +237,10 @@ const OpenStreetMapInput = ({
             right: 0,
             maxHeight: "260px",
             overflowY: "auto",
-            border: "1px solid #cbd5e1",
+            border: "1px solid rgba(242,240,236,0.16)",
             borderRadius: "12px",
-            backgroundColor: "#fff",
-            boxShadow: "0 16px 28px rgba(15, 23, 42, 0.12)",
+            backgroundColor: "#141414",
+            boxShadow: "0 16px 28px rgba(0, 0, 0, 0.35)",
           }}
         >
           {suggestions.map((place, index) => {
@@ -250,9 +260,9 @@ const OpenStreetMapInput = ({
                   padding: "12px 14px",
                   border: "none",
                   textAlign: "left",
-                  backgroundColor: isActive ? "#ecfeff" : "#fff",
+                  backgroundColor: isActive ? "rgba(232,50,26,0.12)" : "#141414",
                   cursor: "pointer",
-                  borderBottom: index === suggestions.length - 1 ? "none" : "1px solid #e2e8f0",
+                  borderBottom: index === suggestions.length - 1 ? "none" : "1px solid rgba(242,240,236,0.12)",
                 }}
               >
                 <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>

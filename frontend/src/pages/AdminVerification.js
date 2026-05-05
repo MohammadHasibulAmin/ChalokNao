@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import SupportChatWidget from "../components/chat/SupportChatWidget";
@@ -14,7 +24,6 @@ const AdminVerification = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [reportForm, setReportForm] = useState({ reason: "", description: "", type: "misconduct" });
-  const [toasts, setToasts] = useState([]);
   const user = JSON.parse(localStorage.getItem("user")) || null;
 
   const fetchDashboard = async () => {
@@ -76,21 +85,7 @@ const AdminVerification = () => {
     fetchTransactions();
   }, []);
 
-  useEffect(() => {
-    const handleAppNotif = (e) => {
-      const notif = e?.detail;
-      if (!notif) return;
-      setToasts((t) => [...t, { id: String(notif._id || Date.now()), ...notif }]);
-    };
-    window.addEventListener("app:notification", handleAppNotif);
-    return () => {
-      window.removeEventListener("app:notification", handleAppNotif);
-    };
-  }, []);
 
-  const dismissToast = (toastId) => {
-    setToasts((t) => t.filter((x) => String(x.id) !== String(toastId)));
-  };
 
   const handleVerifyDriver = async (driverId, status) => {
     try {
@@ -161,42 +156,12 @@ const AdminVerification = () => {
 
   return (
     <div style={pageStyle}>
-      {/* Notification Toasts */}
-      <div style={toastContainerStyle}>
-        {toasts.map((toast) => (
-          <div key={toast.id} style={toastStyle}>
-            <div style={{ flex: 1 }}>
-              <strong style={{ color: "#fff" }}>
-                {toast.type === "message" ? "📨 New Message" : toast.message || "Notification"}
-              </strong>
-              {toast.message && toast.type !== "message" && (
-                <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#f3f4f6" }}>
-                  {toast.message}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={() => dismissToast(toast.id)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#fff",
-                cursor: "pointer",
-                fontSize: 18,
-              }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
-
       {/* Chat Widget */}
       {user && <SupportChatWidget user={user} />}
 
       <header style={headerStyle}>
-        <h1 style={{ margin: 0, color: "#1f2937" }}>Admin Control Panel</h1>
-        <p style={{ margin: "8px 0 0 0", color: "#6b7280", fontSize: 14 }}>
+        <h1 style={{ margin: 0, color: "#F2F0EC" }}>Admin Control Panel</h1>
+        <p style={{ margin: "8px 0 0 0", color: "rgba(242,240,236,0.6)", fontSize: 14 }}>
           Manage drivers, users, reports, and transactions
         </p>
       </header>
@@ -204,7 +169,7 @@ const AdminVerification = () => {
       {message && (
         <div style={messageStyle}>
           {message}
-          <button onClick={() => setMessage("")} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontSize: 16 }}>
+          <button onClick={() => setMessage("")} style={{ background: "none", border: "none", color: "#F2F0EC", cursor: "pointer", fontSize: 16 }}>
             ×
           </button>
         </div>
@@ -217,8 +182,8 @@ const AdminVerification = () => {
             onClick={() => setActiveTab(tab)}
             style={{
               ...tabButtonStyle,
-              borderBottom: activeTab === tab ? "3px solid #0ea5e9" : "none",
-              color: activeTab === tab ? "#0ea5e9" : "#6b7280",
+              borderBottom: activeTab === tab ? "3px solid #E8321A" : "none",
+              color: activeTab === tab ? "#E8321A" : "rgba(242,240,236,0.6)",
             }}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -230,7 +195,7 @@ const AdminVerification = () => {
         {/* DASHBOARD TAB */}
         {activeTab === "dashboard" && (
           <div>
-            <h2 style={{ color: "#1f2937", marginBottom: 20 }}>Dashboard Overview</h2>
+            <h2 style={{ color: "#F2F0EC", marginBottom: 20 }}>Dashboard Overview</h2>
             {loading || !stats ? (
               <p>Loading...</p>
             ) : (
@@ -268,11 +233,11 @@ const AdminVerification = () => {
         {/* DRIVER VERIFICATION TAB */}
         {activeTab === "verification" && (
           <div>
-            <h2 style={{ color: "#1f2937", marginBottom: 20 }}>Driver Verification</h2>
+            <h2 style={{ color: "#F2F0EC", marginBottom: 20 }}>Driver Verification</h2>
             <div style={sectionStyle}>
-              <h3 style={{ marginTop: 0, color: "#374151" }}>Pending Verifications ({pending.length})</h3>
+              <h3 style={{ marginTop: 0, color: "#F2F0EC" }}>Pending Verifications ({pending.length})</h3>
               {pending.length === 0 ? (
-                <p style={{ color: "#9ca3af" }}>No pending requests</p>
+                <p style={{ color: "rgba(242,240,236,0.6)" }}>No pending requests</p>
               ) : (
                 <div style={gridStyle}>
                   {pending.map((d) => (
@@ -284,7 +249,7 @@ const AdminVerification = () => {
                       />
                       <div>
                         <div style={cardTitleStyle}>{d.name || d.userName}</div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                        <div style={{ fontSize: 12, color: "rgba(242,240,236,0.6)" }}>
                           {d.experienceYears} years exp • Rating: {d.ratingAvg || "N/A"}
                         </div>
                       </div>
@@ -306,19 +271,19 @@ const AdminVerification = () => {
                     />
                   </div>
                   <div style={{ flex: 1, marginLeft: 20 }}>
-                    <h3 style={{ margin: "0 0 8px 0", color: "#1f2937" }}>{selected.name || selected.userName}</h3>
-                    <p style={{ margin: 0, color: "#6b7280", fontSize: 14 }}>
+                    <h3 style={{ margin: "0 0 8px 0", color: "#F2F0EC" }}>{selected.name || selected.userName}</h3>
+                    <p style={{ margin: 0, color: "rgba(242,240,236,0.6)", fontSize: 14 }}>
                       {selected.location?.city || "—"} • {selected.experienceYears} years experience
                     </p>
                     <div style={{ marginTop: 12, display: "flex", gap: 16 }}>
                       <div>
-                        <span style={{ color: "#6b7280", fontSize: 12 }}>License:</span> {selected.licenseNumber || "—"}
+                        <span style={{ color: "rgba(242,240,236,0.6)", fontSize: 12 }}>License:</span> {selected.licenseNumber || "—"}
                       </div>
                       <div>
-                        <span style={{ color: "#6b7280", fontSize: 12 }}>Salary:</span> ৳{selected.expectedSalary?.monthly || "—"}
+                        <span style={{ color: "rgba(242,240,236,0.6)", fontSize: 12 }}>Salary:</span> ৳{selected.expectedSalary?.monthly || "—"}
                       </div>
                       <div>
-                        <span style={{ color: "#6b7280", fontSize: 12 }}>Rating:</span> {selected.ratingAvg || "—"}⭐
+                        <span style={{ color: "rgba(242,240,236,0.6)", fontSize: 12 }}>Rating:</span> {selected.ratingAvg || "—"}⭐
                       </div>
                     </div>
                   </div>
@@ -326,11 +291,11 @@ const AdminVerification = () => {
 
                 {selected.documents && (
                   <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid #e5e7eb" }}>
-                    <h4 style={{ marginBottom: 12, color: "#1f2937" }}>Uploaded Documents</h4>
+                    <h4 style={{ marginBottom: 12, color: "#F2F0EC" }}>Uploaded Documents</h4>
                     <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
                       {selected.documents.licenseUrl && (
                         <div>
-                          <p style={{ margin: "0 0 8px 0", color: "#6b7280", fontSize: 12 }}>License</p>
+                          <p style={{ margin: "0 0 8px 0", color: "rgba(242,240,236,0.6)", fontSize: 12 }}>License</p>
                           <img
                             src={`${api.defaults.baseURL.replace("/api", "")}/uploads/${selected.documents.licenseUrl}`}
                             alt="license"
@@ -340,7 +305,7 @@ const AdminVerification = () => {
                       )}
                       {selected.documents.nidUrl && (
                         <div>
-                          <p style={{ margin: "0 0 8px 0", color: "#6b7280", fontSize: 12 }}>NID</p>
+                          <p style={{ margin: "0 0 8px 0", color: "rgba(242,240,236,0.6)", fontSize: 12 }}>NID</p>
                           <img
                             src={`${api.defaults.baseURL.replace("/api", "")}/uploads/${selected.documents.nidUrl}`}
                             alt="nid"
@@ -371,7 +336,7 @@ const AdminVerification = () => {
         {/* SUSPENSION TAB */}
         {activeTab === "suspension" && (
           <div>
-            <h2 style={{ color: "#1f2937", marginBottom: 20 }}>User Account Management</h2>
+            <h2 style={{ color: "#F2F0EC", marginBottom: 20 }}>User Account Management</h2>
 
             <div style={sectionStyle}>
               <h3 style={{ marginTop: 0, color: "#374151" }}>All Drivers</h3>
@@ -425,7 +390,7 @@ const AdminVerification = () => {
         {/* REPORTS TAB */}
         {activeTab === "reports" && (
           <div>
-            <h2 style={{ color: "#1f2937", marginBottom: 20 }}>Report Monitoring</h2>
+            <h2 style={{ color: "#F2F0EC", marginBottom: 20 }}>Report Monitoring</h2>
 
             <div style={sectionStyle}>
               <h3 style={{ marginTop: 0, color: "#374151" }}>Create Report</h3>
@@ -486,14 +451,14 @@ const AdminVerification = () => {
             <div style={sectionStyle}>
               <h3 style={{ marginTop: 0, color: "#374151" }}>Reports ({reports.length})</h3>
               {reports.length === 0 ? (
-                <p style={{ color: "#9ca3af" }}>No reports</p>
+                <p style={{ color: "rgba(242,240,236,0.6)" }}>No reports</p>
               ) : (
                 <div>
                   {reports.map((r) => (
                     <div key={r._id} style={reportCardStyle}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <h4 style={{ margin: 0, color: "#1f2937" }}>{r.reason || "Unknown"}</h4>
+                          <h4 style={{ margin: 0, color: "#F2F0EC" }}>{r.reason || "Unknown"}</h4>
                           <span
                             style={{
                               padding: "4px 8px",
@@ -506,8 +471,8 @@ const AdminVerification = () => {
                             {r.status}
                           </span>
                         </div>
-                        <p style={{ margin: "4px 0", color: "#6b7280", fontSize: 14 }}>{r.description}</p>
-                        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>
+                        <p style={{ margin: "4px 0", color: "rgba(242,240,236,0.6)", fontSize: 14 }}>{r.description}</p>
+                        <div style={{ fontSize: 12, color: "rgba(242,240,236,0.6)", marginTop: 8 }}>
                           Type: {r.type} • Reported: {new Date(r.createdAt).toLocaleDateString()}
                         </div>
                         {r.status === "resolved" && r.resolution && (
@@ -538,7 +503,7 @@ const AdminVerification = () => {
         {/* TRANSACTIONS TAB */}
         {activeTab === "transactions" && (
           <div>
-            <h2 style={{ color: "#1f2937", marginBottom: 20 }}>Commission & Transactions</h2>
+            <h2 style={{ color: "#F2F0EC", marginBottom: 20 }}>Commission & Transactions</h2>
 
             <div style={sectionStyle}>
               <h3 style={{ marginTop: 0, color: "#374151" }}>Transaction Summary</h3>
@@ -565,7 +530,7 @@ const AdminVerification = () => {
             <div style={sectionStyle}>
               <h3 style={{ marginTop: 0, color: "#374151" }}>Transaction Details</h3>
               {transactions.length === 0 ? (
-                <p style={{ color: "#9ca3af" }}>No transactions</p>
+                <p style={{ color: "rgba(242,240,236,0.6)" }}>No transactions</p>
               ) : (
                 <div style={{ overflowX: "auto" }}>
                   <table style={tableFullStyle}>
@@ -599,7 +564,7 @@ const AdminVerification = () => {
                               {t.status}
                             </span>
                           </td>
-                          <td style={{ fontSize: 12, color: "#6b7280" }}>{new Date(t.createdAt).toLocaleDateString()}</td>
+                          <td style={{ fontSize: 12, color: "rgba(242,240,236,0.6)" }}>{new Date(t.createdAt).toLocaleDateString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -617,44 +582,24 @@ const AdminVerification = () => {
 // STYLES
 const pageStyle = {
   minHeight: "100vh",
-  backgroundColor: "#f9fafb",
+  backgroundColor: "#0D0D0D",
   padding: "20px",
+  color: "#F2F0EC",
 };
 
-const toastContainerStyle = {
-  position: "fixed",
-  top: 20,
-  right: 20,
-  zIndex: 9999,
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-  maxWidth: 400,
-};
 
-const toastStyle = {
-  padding: "14px 16px",
-  backgroundColor: "#0ea5e9",
-  color: "#fff",
-  borderRadius: 8,
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  animation: "slideIn 0.3s ease",
-};
 
 const headerStyle = {
   marginBottom: 30,
   paddingBottom: 20,
-  borderBottom: "1px solid #e5e7eb",
+  borderBottom: "1px solid rgba(242,240,236,0.08)",
 };
 
 const messageStyle = {
   marginBottom: 20,
   padding: "12px 16px",
   backgroundColor: "#10b981",
-  color: "#fff",
+  color: "#F2F0EC",
   borderRadius: 8,
   display: "flex",
   justifyContent: "space-between",
@@ -665,7 +610,7 @@ const tabNavStyle = {
   display: "flex",
   gap: 0,
   marginBottom: 30,
-  borderBottom: "1px solid #e5e7eb",
+  borderBottom: "1px solid rgba(242,240,236,0.08)",
 };
 
 const tabButtonStyle = {
@@ -676,6 +621,7 @@ const tabButtonStyle = {
   fontSize: 14,
   fontWeight: 500,
   transition: "all 0.3s",
+  color: "rgba(242,240,236,0.6)",
 };
 
 const contentStyle = {
@@ -692,15 +638,15 @@ const statsGridStyle = {
 
 const statCardStyle = {
   padding: 16,
-  backgroundColor: "#fff",
+  backgroundColor: "#141414",
   borderRadius: 8,
-  border: "1px solid #e5e7eb",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+  border: "1px solid rgba(242,240,236,0.08)",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
 };
 
 const statLabelStyle = {
   fontSize: 12,
-  color: "#6b7280",
+  color: "rgba(242,240,236,0.6)",
   marginBottom: 8,
   fontWeight: 500,
 };
@@ -708,22 +654,23 @@ const statLabelStyle = {
 const statValueStyle = {
   fontSize: 28,
   fontWeight: 700,
-  color: "#1f2937",
+  color: "#F2F0EC",
   marginBottom: 4,
 };
 
 const statSubStyle = {
   fontSize: 12,
-  color: "#9ca3af",
+  color: "rgba(242,240,236,0.5)",
 };
 
 const sectionStyle = {
   marginBottom: 30,
   padding: 20,
-  backgroundColor: "#fff",
+  backgroundColor: "#1A1A1A",
   borderRadius: 8,
-  border: "1px solid #e5e7eb",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+  border: "1px solid rgba(242,240,236,0.08)",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+  color: "#F2F0EC",
 };
 
 const gridStyle = {
@@ -734,14 +681,15 @@ const gridStyle = {
 
 const cardStyle = {
   padding: 16,
-  backgroundColor: "#f9fafb",
+  backgroundColor: "#141414",
   borderRadius: 8,
-  border: "1px solid #e5e7eb",
+  border: "1px solid rgba(242,240,236,0.08)",
   display: "flex",
   alignItems: "center",
   gap: 12,
   cursor: "pointer",
   transition: "all 0.2s",
+  color: "#F2F0EC",
 };
 
 const avatarSmallStyle = {
@@ -753,17 +701,18 @@ const avatarSmallStyle = {
 
 const cardTitleStyle = {
   fontWeight: 600,
-  color: "#1f2937",
+  color: "#F2F0EC",
   fontSize: 14,
 };
 
 const detailsCardStyle = {
   marginTop: 20,
   padding: 20,
-  backgroundColor: "#fff",
+  backgroundColor: "#1A1A1A",
   borderRadius: 8,
-  border: "1px solid #e5e7eb",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  border: "1px solid rgba(242,240,236,0.08)",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+  color: "#F2F0EC",
 };
 
 const detailsHeaderStyle = {
@@ -786,20 +735,23 @@ const formStyle = {
 
 const inputStyle = {
   padding: "10px 12px",
-  border: "1px solid #d1d5db",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: 6,
   fontSize: 14,
   fontFamily: "inherit",
+  backgroundColor: "#0D0D0D",
+  color: "#F2F0EC",
 };
 
 const reportCardStyle = {
   padding: 16,
-  backgroundColor: "#f9fafb",
+  backgroundColor: "#141414",
   borderRadius: 8,
-  border: "1px solid #e5e7eb",
+  border: "1px solid rgba(242,240,236,0.08)",
   marginBottom: 12,
   display: "flex",
   gap: 16,
+  color: "#F2F0EC",
 };
 
 const tableStyle = {
@@ -813,9 +765,10 @@ const tableRowStyle = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: 12,
-  backgroundColor: "#f9fafb",
+  backgroundColor: "#141414",
   borderRadius: 6,
-  border: "1px solid #e5e7eb",
+  border: "1px solid rgba(242,240,236,0.08)",
+  color: "#F2F0EC",
 };
 
 const tableFullStyle = {
@@ -825,21 +778,23 @@ const tableFullStyle = {
 };
 
 const tableHeadStyle = {
-  backgroundColor: "#f3f4f6",
+  backgroundColor: "#141414",
   fontWeight: 600,
-  color: "#374151",
+  color: "#F2F0EC",
   fontSize: 13,
+  borderBottom: "1px solid rgba(242,240,236,0.08)",
 };
 
 const tableBodyRowStyle = {
-  borderBottom: "1px solid #e5e7eb",
+  borderBottom: "1px solid rgba(242,240,236,0.08)",
   padding: 12,
+  color: "#F2F0EC",
 };
 
 const buttonPrimaryStyle = {
   padding: "10px 16px",
-  backgroundColor: "#0ea5e9",
-  color: "#fff",
+  backgroundColor: "#E8321A",
+  color: "#F2F0EC",
   border: "none",
   borderRadius: 6,
   cursor: "pointer",
@@ -851,7 +806,7 @@ const buttonPrimaryStyle = {
 const buttonDangerStyle = {
   padding: "10px 16px",
   backgroundColor: "#dc2626",
-  color: "#fff",
+  color: "#F2F0EC",
   border: "none",
   borderRadius: 6,
   cursor: "pointer",
@@ -861,9 +816,9 @@ const buttonDangerStyle = {
 
 const buttonSecondaryStyle = {
   padding: "10px 16px",
-  backgroundColor: "#d1d5db",
-  color: "#374151",
-  border: "none",
+  backgroundColor: "#141414",
+  color: "#F2F0EC",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: 6,
   cursor: "pointer",
   fontWeight: 600,
@@ -872,8 +827,8 @@ const buttonSecondaryStyle = {
 
 const buttonWarningStyle = {
   padding: "6px 12px",
-  backgroundColor: "#f59e0b",
-  color: "#fff",
+  backgroundColor: "#E8321A",
+  color: "#F2F0EC",
   border: "none",
   borderRadius: 4,
   cursor: "pointer",
@@ -884,7 +839,7 @@ const buttonWarningStyle = {
 const buttonSuccessStyle = {
   padding: "6px 12px",
   backgroundColor: "#10b981",
-  color: "#fff",
+  color: "#F2F0EC",
   border: "none",
   borderRadius: 4,
   cursor: "pointer",
@@ -894,8 +849,8 @@ const buttonSuccessStyle = {
 
 const buttonSmallStyle = {
   padding: "6px 12px",
-  backgroundColor: "#0ea5e9",
-  color: "#fff",
+  backgroundColor: "#E8321A",
+  color: "#F2F0EC",
   border: "none",
   borderRadius: 4,
   cursor: "pointer",

@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 
@@ -177,15 +187,15 @@ const containerStyle = {
   maxWidth: "600px",
   margin: "20px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#111",
 };
 
 const formStyle = { display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" };
-const inputStyle = { padding: "10px", borderRadius: "5px", border: "1px solid #ccc" };
-const buttonStyle = { padding: "10px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
-const dayCountStyle = { margin: 0, color: "#1f2937", fontSize: "14px" };
-const listItemStyle = { padding: "15px", border: "1px solid #ddd", borderRadius: "5px", marginBottom: "10px", backgroundColor: "#fff" };
+const inputStyle = { padding: "10px", borderRadius: "5px", border: "1px solid rgba(242,240,236,0.14)", color: "#F2F0EC", backgroundColor: "#0D0D0D" };
+const buttonStyle = { padding: "10px", backgroundColor: "#E8321A", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
+const dayCountStyle = { margin: 0, color: "#F2F0EC", fontSize: "14px" };
+const listItemStyle = { padding: "15px", border: "1px solid rgba(242,240,236,0.12)", borderRadius: "5px", marginBottom: "10px", backgroundColor: "#141414" };
 
 export default Availability;

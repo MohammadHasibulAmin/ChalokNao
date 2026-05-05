@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
@@ -293,7 +303,7 @@ const heroStyle = {
   padding: "18px",
   marginBottom: "14px",
   color: "#fff",
-  background: "linear-gradient(135deg, #0f172a, #0f766e)",
+  background: "linear-gradient(135deg, #0D0D0D, #0f172a)",
 };
 
 const eyebrowStyle = {
@@ -306,9 +316,9 @@ const eyebrowStyle = {
 
 const cardStyle = {
   borderRadius: "14px",
-  border: "1px solid #dbe5ef",
-  backgroundColor: "#fff",
-  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.05)",
+  border: "1px solid rgba(242,240,236,0.12)",
+  backgroundColor: "#141414",
+  boxShadow: "0 8px 18px rgba(0, 0, 0, 0.35)",
   padding: "16px",
   marginBottom: "12px",
 };
@@ -328,8 +338,8 @@ const metricPillStyle = {
   borderRadius: "999px",
   fontSize: "12px",
   fontWeight: 700,
-  color: "#1f2937",
-  backgroundColor: "#e2e8f0",
+  color: "rgba(242,240,236,0.92)",
+  backgroundColor: "#111",
 };
 
 const badgeWrapStyle = {
@@ -343,9 +353,9 @@ const trainingBadgeStyle = {
   borderRadius: "999px",
   fontSize: "12px",
   fontWeight: 700,
-  color: "#166534",
-  backgroundColor: "#dcfce7",
-  border: "1px solid #86efac",
+  color: "#A7F3D0",
+  backgroundColor: "#083f2d",
+  border: "1px solid rgba(167,243,208,0.25)",
 };
 
 const profileBadgeStyle = {
@@ -353,9 +363,9 @@ const profileBadgeStyle = {
   borderRadius: "999px",
   fontSize: "12px",
   fontWeight: 700,
-  color: "#0f5f8f",
-  backgroundColor: "#e0f2fe",
-  border: "1px solid #7dd3fc",
+  color: "rgba(242,240,236,0.92)",
+  backgroundColor: "#111",
+  border: "1px solid rgba(242,240,236,0.12)",
 };
 
 const backLinkStyle = {
@@ -370,9 +380,9 @@ const ownerActionCardStyle = {
   marginTop: "14px",
   padding: "16px",
   borderRadius: "12px",
-  border: "1px solid rgba(11, 128, 116, 0.08)",
-  backgroundColor: "#ffffff",
-  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.04)",
+  border: "1px solid rgba(242,240,236,0.12)",
+  backgroundColor: "#141414",
+  boxShadow: "0 8px 20px rgba(0, 0, 0, 0.35)",
 };
 
 const ownerActionHeaderStyle = {
@@ -403,9 +413,10 @@ const ownerInputStyle = {
   width: "100%",
   padding: "10px 12px",
   borderRadius: "10px",
-  border: "1px solid #cbd5e1",
+  border: "1px solid rgba(242,240,236,0.16)",
   fontSize: "14px",
-  backgroundColor: "#fff",
+  backgroundColor: "#0d0d0d",
+  color: "rgba(242,240,236,0.94)",
 };
 
 const actionPrimaryButtonStyle = {
@@ -423,9 +434,9 @@ const actionPrimaryButtonStyle = {
 const actionOutlineButtonStyle = {
   padding: "10px 14px",
   borderRadius: "10px",
-  border: "1px solid rgba(15,118,110,0.12)",
-  backgroundColor: "#fff",
-  color: "#0f766e",
+  border: "1px solid rgba(242,240,236,0.16)",
+  backgroundColor: "#111",
+  color: "rgba(242,240,236,0.92)",
   fontWeight: 700,
   cursor: "pointer",
   transition: "background-color .12s ease, transform .08s ease",

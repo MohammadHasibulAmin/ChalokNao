@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import api from "../../services/api";
 
@@ -94,8 +104,8 @@ const DirectChatModal = ({ open, onClose, currentUser, counterpartId, counterpar
                   style={{
                     ...bubbleStyle,
                     alignSelf: isMine ? "flex-end" : "flex-start",
-                    backgroundColor: isMine ? "#0f766e" : "#e2e8f0",
-                    color: isMine ? "#fff" : "#0f172a",
+                    backgroundColor: isMine ? "#0f766e" : "#111",
+                    color: isMine ? "#fff" : "rgba(242,240,236,0.88)",
                   }}
                 >
                   <p style={{ margin: 0, wordBreak: "break-word" }}>{msg.message}</p>
@@ -139,9 +149,9 @@ const overlayStyle = {
 const modalStyle = {
   width: "min(640px, 100%)",
   maxHeight: "85vh",
-  backgroundColor: "#fff",
+  backgroundColor: "#141414",
   borderRadius: 16,
-  boxShadow: "0 25px 60px rgba(0,0,0,0.25)",
+  boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
   display: "flex",
   flexDirection: "column",
   overflow: "hidden",
@@ -149,7 +159,7 @@ const modalStyle = {
 
 const modalHeaderStyle = {
   padding: "16px 18px",
-  borderBottom: "1px solid #e2e8f0",
+  borderBottom: "1px solid rgba(242,240,236,0.12)",
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -167,7 +177,7 @@ const eyebrowStyle = {
 
 const closeButtonStyle = {
   border: "none",
-  background: "#e2e8f0",
+  background: "#1a1a1a",
   borderRadius: 999,
   width: 32,
   height: 32,
@@ -184,7 +194,7 @@ const messagesStyle = {
   display: "flex",
   flexDirection: "column",
   gap: 10,
-  backgroundColor: "#f8fafc",
+  backgroundColor: "#111",
 };
 
 const bubbleStyle = {
@@ -196,19 +206,21 @@ const bubbleStyle = {
 };
 
 const formStyle = {
-  borderTop: "1px solid #e2e8f0",
+  borderTop: "1px solid rgba(242,240,236,0.12)",
   padding: 14,
   display: "flex",
   gap: 10,
-  backgroundColor: "#fff",
+  backgroundColor: "#141414",
 };
 
 const inputStyle = {
   flex: 1,
   borderRadius: 12,
-  border: "1px solid #cbd5e1",
+  border: "1px solid rgba(242,240,236,0.16)",
   padding: "12px 14px",
   fontSize: 14,
+  backgroundColor: "#0d0d0d",
+  color: "rgba(242,240,236,0.94)",
 };
 
 const sendButtonStyle = {

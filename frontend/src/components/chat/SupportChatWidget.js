@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import api from "../../services/api";
@@ -239,8 +249,8 @@ const SupportChatWidget = ({ user }) => {
 
   return (
     <>
-      <button type="button" onClick={() => setIsOpen((prev) => !prev)} style={launcherStyle} aria-label="Open support chat">
-        <span style={iconStyle}>💬</span>
+      <button type="button" onClick={() => setIsOpen((prev) => !prev)} style={launcherStyle} aria-label="Open support chat" title="Support Chat">
+        <span style={iconStyle}>✉</span>
         {unreadCount > 0 ? <span style={badgeStyle}>{unreadCount > 9 ? "9+" : unreadCount}</span> : null}
       </button>
 
@@ -336,17 +346,18 @@ const launcherStyle = {
   height: "60px",
   borderRadius: "50%",
   border: "none",
-  background: "linear-gradient(135deg, #0ea5e9, #2563eb)",
-  color: "#fff",
+  background: "linear-gradient(135deg, #E8321A 0%, #C92A0F 100%)",
+  color: "#F2F0EC",
   cursor: "pointer",
-  boxShadow: "0 12px 28px rgba(37, 99, 235, 0.35)",
+  boxShadow: "0 12px 28px rgba(232, 50, 26, 0.35)",
   zIndex: 1000,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  transition: "transform 0.2s",
 };
 
-const iconStyle = { fontSize: "26px", lineHeight: 1, transform: "translateY(-1px)" };
+const iconStyle = { fontSize: "28px", lineHeight: 1, transform: "translateY(-1px)", fontWeight: "700" };
 
 const badgeStyle = {
   position: "absolute",
@@ -371,14 +382,14 @@ const panelStyle = {
   bottom: "88px",
   width: "min(94vw, 760px)",
   height: "min(80vh, 560px)",
-  backgroundColor: "#ffffff",
+  backgroundColor: "#141414",
   borderRadius: "14px",
-  boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
+  boxShadow: "0 18px 40px rgba(0,0,0,0.35)",
   overflow: "hidden",
   zIndex: 1001,
   display: "flex",
   flexDirection: "column",
-  border: "1px solid #d6dbe1",
+  border: "1px solid rgba(242,240,236,0.12)",
 };
 
 const headerStyle = {
@@ -386,8 +397,8 @@ const headerStyle = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: "12px 14px",
-  color: "#fff",
-  background: "linear-gradient(135deg, #0a7f5a, #0d5f8f)",
+  color: "#F2F0EC",
+  background: "linear-gradient(135deg, #E8321A 0%, #C92A0F 100%)",
 };
 
 const closeButtonStyle = {
@@ -408,15 +419,15 @@ const bodyStyle = {
 
 const threadListStyle = {
   width: "min(38%, 260px)",
-  borderRight: "1px solid #e6eaf0",
+  borderRight: "1px solid rgba(242,240,236,0.12)",
   overflowY: "auto",
   padding: "8px",
-  backgroundColor: "#f7fafc",
+  backgroundColor: "#111",
 };
 
 const threadButtonStyle = {
   width: "100%",
-  border: "1px solid #dfe5ec",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "10px",
   padding: "10px",
   marginBottom: "8px",
@@ -424,7 +435,7 @@ const threadButtonStyle = {
   flexDirection: "column",
   alignItems: "flex-start",
   gap: "4px",
-  backgroundColor: "#fff",
+  backgroundColor: "#111",
   cursor: "pointer",
   textAlign: "left",
   position: "relative",
@@ -506,7 +517,7 @@ const bubbleTimeStyle = {
 };
 
 const formStyle = {
-  borderTop: "1px solid #e6eaf0",
+  borderTop: "1px solid rgba(242,240,236,0.12)",
   padding: "10px",
   display: "flex",
   gap: "8px",

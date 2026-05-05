@@ -3,47 +3,104 @@ const Driver = require("../models/Driver");
 const connectDB = require("../config/db");
 const { ObjectId } = require("mongodb");
 
+async function resolveDriverRecipientId(driverRef) {
+  const driverKey = String(driverRef || "").trim();
+  if (!driverKey) return null;
+
+  try {
+    const driverByUser = await Driver.findByUserId(driverKey);
+    if (driverByUser?.userId) {
+      return String(driverByUser.userId);
+    }
+  } catch (_) {
+    // fall through to collection lookup
+  }
+
+  try {
+    const db = await connectDB();
+    const driverDoc = await db.collection("drivers").findOne({
+      $or: [
+        ...(String(driverKey).length === 24 && /^[0-9a-fA-F]{24}$/.test(driverKey) ? [{ _id: new ObjectId(driverKey) }] : []),
+        { userId: driverKey },
+      ],
+    });
+
+    if (driverDoc?.userId) {
+      return String(driverDoc.userId);
+    }
+  } catch (err) {
+    console.warn("Failed to resolve driver recipient:", err.message);
+  }
+
+  return driverKey;
+}
+
+function buildUserLookupQuery(userId) {
+  const key = String(userId || "").trim();
+  if (!key) return null;
+
+  const or = [{ _id: key }];
+  if (key.length === 24 && /^[0-9a-fA-F]{24}$/.test(key)) {
+    try {
+      or.push({ _id: new ObjectId(key) });
+    } catch (_) {
+      // ignore invalid object id conversion
+    }
+  }
+
+  return { $or: or };
+}
+
 exports.createOffer = async (req, res) => {
   try {
-    const { ownerId, driverId, salary, duration, hireId, driverName } = req.body;
-    if (!ownerId || !driverId || !salary) {
-      return res.status(400).json({ message: "ownerId, driverId and salary are required" });
+    const { ownerId, driverId, salary, amount, duration, hireId, driverName } = req.body;
+    if (!ownerId || !driverId) {
+      return res.status(400).json({ message: "ownerId and driverId are required" });
     }
+
+    const salaryValue = salary !== undefined ? salary : amount;
+    const salaryVal = (salaryValue !== undefined && salaryValue !== null && salaryValue !== "") ? Number(salaryValue) : null;
 
     const offer = await Offer.createOffer({
       ownerId,
       driverId,
       hireId: hireId || null,
       driverName: driverName || "Unknown",
-      salary: Number(salary),
+      salary: salaryVal,
       duration: duration || null,
       status: "pending",
     });
 
+    const driverRecipientId = await resolveDriverRecipientId(driverId);
+
     // Send notification to driver
     try {
       const db = await connectDB();
-      const driverIdStr = String(driverId || "");
-      if (driverIdStr) {
+      if (driverRecipientId) {
         const notif = {
           _id: new ObjectId(),
           type: "offer",
           status: "pending",
-          message: `You have received a job offer with salary $${salary}`,
-          data: { offerId: String(offer._id), hireId: hireId || null },
+          message: salaryVal ? `You have received a job offer with salary $${salaryVal}` : "You have received a job request",
+          data: {
+            offerId: String(offer._id),
+            hireId: hireId || null,
+            recipientUserId: driverRecipientId,
+            recipientRole: "driver",
+          },
           read: false,
           createdAt: new Date(),
         };
 
         await db.collection("user").updateOne(
-          { _id: new ObjectId(driverIdStr) },
+          buildUserLookupQuery(driverRecipientId),
           { $push: { notifications: notif }, $set: { updatedAt: new Date() } }
         );
 
         try {
           const socketManager = require("../socket/socketManager");
           const io = socketManager.getIo();
-          io.to(`user:${driverIdStr}`).emit("offer:created", notif);
+          io.to(`user:${driverRecipientId}`).emit("offer:created", notif);
         } catch (err) {
           console.warn("Offer socket emit failed:", err.message);
         }
@@ -109,18 +166,21 @@ exports.updateOfferStatus = async (req, res) => {
         const Hire = require("../models/Hire");
         const hire = await Hire.findById(offer.hireId);
         if (hire) {
+          // Update hire salary to the accepted offer salary
+          const acceptedSalary = offer.salary || offer.amount || hire.salary;
+          
           // Update hire with driver confirmation and set status to AwaitingPayment
           const Transaction = require("../models/Transaction");
           const COMMISSION_PERCENTAGE = 0.15; // 15% commission
           
-          const commission = Math.round(Number(hire.salary) * COMMISSION_PERCENTAGE * 100) / 100;
-          const ownerAmount = Math.round((Number(hire.salary) - commission) * 100) / 100;
+          const commission = Math.round(Number(acceptedSalary) * COMMISSION_PERCENTAGE * 100) / 100;
+          const ownerAmount = Math.round((Number(acceptedSalary) - commission) * 100) / 100;
 
           const tx = await Transaction.createTransaction({
             hireId: String(hire._id),
             ownerId: hire.ownerId,
             driverId: hire.driverId,
-            amount: Number(hire.salary),
+            amount: Number(acceptedSalary),
             commission,
             ownerAmount,
             status: "pending",
@@ -130,6 +190,7 @@ exports.updateOfferStatus = async (req, res) => {
           await Hire.updateHire(offer.hireId, {
             driverConfirm: true,
             status: "AwaitingPayment",
+            salary: acceptedSalary, // Update the hire salary
             transactionId: String(tx._id),
           });
 
@@ -143,13 +204,18 @@ exports.updateOfferStatus = async (req, res) => {
                 type: "offer",
                 status: "accepted",
                 message: "Driver has accepted the job offer. Proceed to payment.",
-                data: { offerId: String(offer._id), hireId: String(hire._id) },
+                data: {
+                  offerId: String(offer._id),
+                  hireId: String(hire._id),
+                  recipientUserId: String(hire.ownerId),
+                  recipientRole: "owner",
+                },
                 read: false,
                 createdAt: new Date(),
               };
 
               await db.collection("user").updateOne(
-                { _id: new ObjectId(ownerIdStr) },
+                buildUserLookupQuery(ownerIdStr),
                 { $push: { notifications: notif }, $set: { updatedAt: new Date() } }
               );
 
@@ -181,13 +247,18 @@ exports.updateOfferStatus = async (req, res) => {
             type: "offer",
             status: "rejected",
             message: "Driver has rejected the job offer.",
-            data: { offerId: String(offer._id), hireId: offer.hireId || null },
+            data: {
+              offerId: String(offer._id),
+              hireId: offer.hireId || null,
+              recipientUserId: String(offer.ownerId),
+              recipientRole: "owner",
+            },
             read: false,
             createdAt: new Date(),
           };
 
           await db.collection("user").updateOne(
-            { _id: new ObjectId(ownerIdStr) },
+            buildUserLookupQuery(ownerIdStr),
             { $push: { notifications: notif }, $set: { updatedAt: new Date() } }
           );
 

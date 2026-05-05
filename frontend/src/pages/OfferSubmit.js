@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 
@@ -97,7 +107,7 @@ const OfferSubmit = () => {
       await api.post("/offer", {
         ownerId: userId,
         driverId: selectedDriver.userId,
-        amount: Number(amount),
+        salary: Number(amount),
       });
       setMessage("✓ Offer submitted successfully!");
       setSelectedDriver(null);
@@ -147,7 +157,7 @@ const OfferSubmit = () => {
                 onChange={handleSearchChange}
                 style={inputStyle}
               />
-              {loading && <p style={{ color: "#666" }}>Searching...</p>}
+              {loading && <p style={{ color: "#D1D5DB" }}>Searching...</p>}
 
               {showSearchResults && drivers.length > 0 && (
                 <div style={resultsStyle}>
@@ -173,7 +183,7 @@ const OfferSubmit = () => {
               )}
 
               {showSearchResults && drivers.length === 0 && !loading && (
-                <p style={{ color: "#999", textAlign: "center", marginTop: "20px" }}>No drivers found</p>
+                <p style={{ color: "#B0B0B0", textAlign: "center", marginTop: "20px" }}>No drivers found</p>
               )}
             </div>
           )}
@@ -203,7 +213,7 @@ const OfferSubmit = () => {
                   ))}
                 </div>
               ) : (
-                <p style={{ color: "#999", textAlign: "center", padding: "20px" }}>Your shortlist is empty</p>
+                <p style={{ color: "#B0B0B0", textAlign: "center", padding: "20px" }}>Your shortlist is empty</p>
               )}
             </div>
           )}
@@ -259,7 +269,7 @@ const OfferSubmit = () => {
               <button
                 type="button"
                 onClick={() => setSelectedDriver(null)}
-                style={{ ...submitButtonStyle, backgroundColor: "#999" }}
+                style={{ ...submitButtonStyle, backgroundColor: "#6B7280" }}
               >
                 Cancel
               </button>
@@ -275,16 +285,16 @@ const containerStyle = {
   maxWidth: "900px",
   margin: "20px auto",
   padding: "30px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#141414",
 };
 
 const tabsStyle = {
   display: "flex",
   gap: "10px",
   marginBottom: "20px",
-  borderBottom: "1px solid #ddd",
+  borderBottom: "1px solid rgba(242,240,236,0.18)",
 };
 
 const tabButtonStyle = {
@@ -293,7 +303,7 @@ const tabButtonStyle = {
   borderRadius: "5px 5px 0 0",
   cursor: "pointer",
   fontWeight: "bold",
-  color: "#333",
+  color: "#111827",
   transition: "all 0.3s",
 };
 
@@ -305,7 +315,7 @@ const inputStyle = {
   width: "100%",
   padding: "12px",
   borderRadius: "5px",
-  border: "1px solid #ccc",
+  border: "1px solid rgba(242,240,236,0.18)",
   fontSize: "14px",
   marginTop: "10px",
   boxSizing: "border-box",
@@ -360,7 +370,7 @@ const formStyle = {
   padding: "20px",
   backgroundColor: "white",
   borderRadius: "8px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.18)",
 };
 
 const submitButtonStyle = {

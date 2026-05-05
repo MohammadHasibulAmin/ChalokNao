@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import SupportChatWidget from "../components/chat/SupportChatWidget";
@@ -120,7 +130,6 @@ const DriverProfile = () => {
   const [isReviewsOpen, setIsReviewsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("success");
-  const [toasts, setToasts] = useState([]);
   const [userId, setUserId] = useState("");
   const [user, setUser] = useState(null);
 
@@ -132,21 +141,9 @@ const DriverProfile = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const handleAppNotif = (e) => {
-      const notif = e?.detail;
-      if (!notif) return;
-      setToasts((t) => [...t, { id: String(notif._id || Date.now()), ...notif }]);
-    };
-    window.addEventListener("app:notification", handleAppNotif);
-    return () => {
-      window.removeEventListener("app:notification", handleAppNotif);
-    };
-  }, []);
 
-  const dismissToast = (toastId) => {
-    setToasts((t) => t.filter((x) => String(x.id) !== String(toastId)));
-  };
+
+
 
   useEffect(() => {
     if (!userId) {
@@ -315,30 +312,7 @@ const DriverProfile = () => {
 
   return (
     <div style={containerStyle}>
-      {/* Notification Toasts */}
-      <div style={toastContainerStyle}>
-        {toasts.map((toast) => (
-          <div key={toast.id} style={toastStyle}>
-            <div style={{ flex: 1 }}>
-              <strong style={{ color: "#fff" }}>
-                {toast.type === "message" ? "📨 New Message" : toast.message || "Notification"}
-              </strong>
-            </div>
-            <button
-              onClick={() => dismissToast(toast.id)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#fff",
-                cursor: "pointer",
-                fontSize: 18,
-              }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
+
 
       {/* Chat Widget */}
       {user && <SupportChatWidget user={user} />}
@@ -357,7 +331,7 @@ const DriverProfile = () => {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={titleRowStyle}>
-            <h2 style={{ margin: 0, fontSize: "30px", color: "#0f172a" }}>{displayName}</h2>
+            <h2 style={{ margin: 0, fontSize: "30px", color: "#F2F0EC" }}>{displayName}</h2>
             <span style={experienceBadgeStyle}>{experienceBadge}</span>
             <div style={badgeInfoWrapStyle}>
               <button
@@ -374,14 +348,14 @@ const DriverProfile = () => {
                   <div style={badgeInfoTitleStyle}>Experience Badge Targets</div>
                   {BADGE_CATEGORIES.map((category) => (
                     <div key={category.name} style={badgeInfoRowStyle}>
-                      <strong style={{ color: "#0f172a" }}>{category.name}:</strong> {category.target}
+                      <strong style={{ color: "#F2F0EC" }}>{category.name}:</strong> {category.target}
                     </div>
                   ))}
                 </div>
               )}
             </div>
           </div>
-          <p style={{ margin: "10px 0 0", color: "#475569", lineHeight: 1.6 }}>
+          <p style={{ margin: "10px 0 0", color: "rgba(242,240,236,0.7)", lineHeight: 1.6 }}>
             Keep your profile photo and professional details updated so owners can review your experience at a glance.
           </p>
           {driverRecord && (
@@ -445,8 +419,8 @@ const DriverProfile = () => {
       {isUploadModalOpen && (
         <div style={modalOverlayStyle} onClick={closeUploadModal}>
           <div style={modalStyle} onClick={(event) => event.stopPropagation()}>
-            <h3 style={{ marginTop: 0, marginBottom: "8px", color: "#0f172a" }}>Upload Profile Photo</h3>
-            <p style={{ marginTop: 0, marginBottom: "14px", color: "#64748b", lineHeight: 1.5 }}>
+            <h3 style={{ marginTop: 0, marginBottom: "8px", color: "#F2F0EC" }}>Upload Profile Photo</h3>
+            <p style={{ marginTop: 0, marginBottom: "14px", color: "rgba(242,240,236,0.7)", lineHeight: 1.5 }}>
               Choose a clear profile image. It will be saved when you click Save Profile.
             </p>
 
@@ -470,8 +444,8 @@ const DriverProfile = () => {
       {isReviewsOpen && (
         <div style={modalOverlayStyle} onClick={closeReviewsModal}>
           <div style={modalStyle} onClick={(event) => event.stopPropagation()}>
-            <h3 style={{ marginTop: 0, marginBottom: "8px", color: "#0f172a" }}>Employer Reviews</h3>
-            <p style={{ marginTop: 0, marginBottom: "14px", color: "#64748b", lineHeight: 1.5 }}>
+            <h3 style={{ marginTop: 0, marginBottom: "8px", color: "#F2F0EC" }}>Employer Reviews</h3>
+            <p style={{ marginTop: 0, marginBottom: "14px", color: "rgba(242,240,236,0.7)", lineHeight: 1.5 }}>
               Average {averageReviewRating.toFixed(1)} from {employerReviews.length} review{employerReviews.length === 1 ? "" : "s"}.
             </p>
 
@@ -480,7 +454,7 @@ const DriverProfile = () => {
                 employerReviews.map((review) => (
                   <div key={review.id} style={reviewCardStyle}>
                     <div style={reviewTopRowStyle}>
-                      <strong style={{ color: "#0f172a", fontSize: "14px" }}>{review.employerName}</strong>
+                      <strong style={{ color: "#F2F0EC", fontSize: "14px" }}>{review.employerName}</strong>
                       <span style={reviewRatingStyle}>{Number(review.rating || 0).toFixed(1)} / 5</span>
                     </div>
                     <div style={reviewMetaStyle}>{review.contractType}{review.date ? ` • ${new Date(review.date).toLocaleDateString()}` : ""}</div>
@@ -506,37 +480,17 @@ const DriverProfile = () => {
   );
 };
 
-const toastContainerStyle = {
-  position: "fixed",
-  top: 20,
-  right: 20,
-  zIndex: 9999,
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-  maxWidth: 400,
-};
 
-const toastStyle = {
-  padding: "14px 16px",
-  backgroundColor: "#0ea5e9",
-  color: "#fff",
-  borderRadius: 8,
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  animation: "slideIn 0.3s ease",
-};
 
 const containerStyle = {
   maxWidth: "1024px",
   margin: "32px auto",
   padding: "24px",
   borderRadius: "20px",
-  border: "1px solid #e2e8f0",
-  background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
-  boxShadow: "0 14px 40px rgba(15, 23, 42, 0.08)",
+  border: "1px solid rgba(242,240,236,0.08)",
+  background: "linear-gradient(180deg, #1A1A1A 0%, #0D0D0D 100%)",
+  boxShadow: "0 14px 40px rgba(0, 0, 0, 0.4)",
+  color: "#F2F0EC",
 };
 
 const heroStyle = {
@@ -545,8 +499,8 @@ const heroStyle = {
   alignItems: "center",
   padding: "20px",
   borderRadius: "18px",
-  background: "linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)",
-  border: "1px solid #e2e8f0",
+  background: "linear-gradient(135deg, #141414 0%, #0D0D0D 100%)",
+  border: "1px solid rgba(242,240,236,0.08)",
   marginBottom: "20px",
 };
 
@@ -579,12 +533,12 @@ const avatarPlaceholderStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(135deg, #0f766e 0%, #2563eb 100%)",
-  color: "#fff",
+  background: "linear-gradient(135deg, #E8321A 0%, #A02714 100%)",
+  color: "#F2F0EC",
   fontSize: "34px",
   fontWeight: 800,
   letterSpacing: "0.04em",
-  boxShadow: "0 10px 24px rgba(15, 23, 42, 0.14)",
+  boxShadow: "0 10px 24px rgba(232, 50, 26, 0.25)",
 };
 
 const plusBadgeStyle = {
@@ -597,13 +551,13 @@ const plusBadgeStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#0f766e",
-  color: "#fff",
-  border: "2px solid #fff",
+  backgroundColor: "#E8321A",
+  color: "#F2F0EC",
+  border: "2px solid #1A1A1A",
   fontWeight: 800,
   fontSize: "20px",
   lineHeight: 1,
-  boxShadow: "0 6px 14px rgba(15, 118, 110, 0.35)",
+  boxShadow: "0 6px 14px rgba(232, 50, 26, 0.35)",
 };
 
 const titleRowStyle = {
@@ -618,8 +572,8 @@ const experienceBadgeStyle = {
   alignItems: "center",
   padding: "6px 12px",
   borderRadius: "999px",
-  backgroundColor: "#0f766e",
-  color: "#fff",
+  backgroundColor: "#E8321A",
+  color: "#F2F0EC",
   fontSize: "12px",
   fontWeight: 800,
   letterSpacing: "0.02em",
@@ -636,9 +590,9 @@ const badgeInfoButtonStyle = {
   width: "20px",
   height: "20px",
   borderRadius: "50%",
-  border: "1px solid #94a3b8",
-  backgroundColor: "#fff",
-  color: "#334155",
+  border: "1px solid rgba(242,240,236,0.3)",
+  backgroundColor: "#141414",
+  color: "#F2F0EC",
   fontSize: "12px",
   fontWeight: 800,
   lineHeight: 1,
@@ -654,23 +608,23 @@ const badgeInfoPopupStyle = {
   top: "28px",
   right: 0,
   width: "min(420px, calc(100vw - 48px))",
-  backgroundColor: "#ffffff",
-  border: "1px solid #e2e8f0",
+  backgroundColor: "#1A1A1A",
+  border: "1px solid rgba(242,240,236,0.08)",
   borderRadius: "12px",
   padding: "12px",
-  boxShadow: "0 16px 35px rgba(15, 23, 42, 0.2)",
+  boxShadow: "0 16px 35px rgba(0, 0, 0, 0.4)",
 };
 
 const badgeInfoTitleStyle = {
   fontSize: "13px",
   fontWeight: 800,
-  color: "#0f172a",
+  color: "#F2F0EC",
   marginBottom: "8px",
 };
 
 const badgeInfoRowStyle = {
   fontSize: "12px",
-  color: "#475569",
+  color: "rgba(242,240,236,0.7)",
   lineHeight: 1.5,
   marginBottom: "6px",
 };
@@ -687,8 +641,8 @@ const statPillStyle = {
   alignItems: "center",
   padding: "6px 10px",
   borderRadius: "999px",
-  backgroundColor: "#e2e8f0",
-  color: "#334155",
+  backgroundColor: "rgba(232, 50, 26, 0.15)",
+  color: "#E8321A",
   fontSize: "12px",
   fontWeight: 700,
 };
@@ -697,8 +651,8 @@ const reviewPillButtonStyle = {
   ...statPillStyle,
   border: "none",
   cursor: "pointer",
-  backgroundColor: "#dbeafe",
-  color: "#1e3a8a",
+  backgroundColor: "rgba(232, 50, 26, 0.15)",
+  color: "#E8321A",
 };
 
 const contentGridStyle = {
@@ -710,21 +664,22 @@ const contentGridStyle = {
 const panelStyle = {
   padding: "20px",
   borderRadius: "18px",
-  backgroundColor: "#fff",
-  border: "1px solid #e2e8f0",
+  backgroundColor: "#141414",
+  border: "1px solid rgba(242,240,236,0.08)",
+  color: "#F2F0EC",
 };
 
 const sectionTitleStyle = {
   marginTop: 0,
   marginBottom: "16px",
   fontSize: "20px",
-  color: "#0f172a",
+  color: "#F2F0EC",
 };
 
 const loadingTextStyle = {
   marginBottom: "12px",
   fontSize: "13px",
-  color: "#475569",
+  color: "rgba(242,240,236,0.7)",
 };
 
 const labelStyle = {
@@ -732,7 +687,7 @@ const labelStyle = {
   fontSize: "13px",
   fontWeight: 700,
   marginBottom: "6px",
-  color: "#334155",
+  color: "rgba(242,240,236,0.9)",
 };
 
 const inputStyle = {
@@ -740,15 +695,16 @@ const inputStyle = {
   padding: "12px 14px",
   marginBottom: "14px",
   borderRadius: "12px",
-  border: "1px solid #cbd5e1",
+  border: "1px solid rgba(242,240,236,0.12)",
   fontSize: "14px",
-  backgroundColor: "#fff",
+  backgroundColor: "#0D0D0D",
+  color: "#F2F0EC",
 };
 
 const readOnlyInputStyle = {
   ...inputStyle,
-  backgroundColor: "#f8fafc",
-  color: "#475569",
+  backgroundColor: "#0D0D0D",
+  color: "rgba(242,240,236,0.7)",
 };
 
 const fileInputStyle = {
@@ -769,20 +725,21 @@ const messageStyle = {
 const buttonStyle = {
   width: "100%",
   padding: "12px 16px",
-  backgroundColor: "#0f766e",
-  color: "#fff",
+  backgroundColor: "#E8321A",
+  color: "#F2F0EC",
   border: "none",
   borderRadius: "12px",
   cursor: "pointer",
   fontSize: "15px",
   fontWeight: 700,
+  transition: "background-color 0.2s",
 };
 
 const previewBoxStyle = {
   minHeight: "220px",
   borderRadius: "16px",
-  border: "1px dashed #cbd5e1",
-  backgroundColor: "#f8fafc",
+  border: "1px dashed rgba(242,240,236,0.12)",
+  backgroundColor: "#0D0D0D",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -799,7 +756,7 @@ const previewImageStyle = {
 const previewPlaceholderStyle = {
   padding: "24px",
   textAlign: "center",
-  color: "#64748b",
+  color: "rgba(242,240,236,0.6)",
   lineHeight: 1.6,
 };
 
@@ -811,7 +768,7 @@ const buttonDisabledStyle = {
 const modalOverlayStyle = {
   position: "fixed",
   inset: 0,
-  backgroundColor: "rgba(15, 23, 42, 0.55)",
+  backgroundColor: "rgba(0, 0, 0, 0.75)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -822,11 +779,12 @@ const modalOverlayStyle = {
 const modalStyle = {
   width: "100%",
   maxWidth: "460px",
-  backgroundColor: "#fff",
+  backgroundColor: "#1A1A1A",
   borderRadius: "16px",
-  border: "1px solid #e2e8f0",
+  border: "1px solid rgba(242,240,236,0.08)",
   padding: "18px",
-  boxShadow: "0 24px 50px rgba(15, 23, 42, 0.25)",
+  boxShadow: "0 24px 50px rgba(0, 0, 0, 0.4)",
+  color: "#F2F0EC",
 };
 
 const modalActionsStyle = {
@@ -844,10 +802,11 @@ const reviewsListStyle = {
 };
 
 const reviewCardStyle = {
-  border: "1px solid #e2e8f0",
+  border: "1px solid rgba(242,240,236,0.08)",
   borderRadius: "12px",
   padding: "10px 12px",
-  backgroundColor: "#f8fafc",
+  backgroundColor: "#0D0D0D",
+  color: "#F2F0EC",
 };
 
 const reviewTopRowStyle = {
@@ -862,8 +821,8 @@ const reviewRatingStyle = {
   alignItems: "center",
   padding: "3px 8px",
   borderRadius: "999px",
-  backgroundColor: "#dcfce7",
-  color: "#166534",
+  backgroundColor: "rgba(232, 50, 26, 0.15)",
+  color: "#E8321A",
   fontSize: "12px",
   fontWeight: 700,
 };
@@ -871,35 +830,36 @@ const reviewRatingStyle = {
 const reviewMetaStyle = {
   marginTop: "4px",
   fontSize: "12px",
-  color: "#64748b",
+  color: "rgba(242,240,236,0.6)",
 };
 
 const reviewTextStyle = {
   marginTop: "8px",
-  color: "#334155",
+  color: "rgba(242,240,236,0.7)",
   fontSize: "13px",
   lineHeight: 1.5,
 };
 
 const reviewEmptyStyle = {
-  border: "1px dashed #cbd5e1",
+  border: "1px dashed rgba(242,240,236,0.12)",
   borderRadius: "12px",
   padding: "16px",
-  color: "#64748b",
+  color: "rgba(242,240,236,0.6)",
   fontSize: "13px",
   lineHeight: 1.5,
   textAlign: "center",
-  backgroundColor: "#f8fafc",
+  backgroundColor: "#0D0D0D",
 };
 
 const secondaryButtonStyle = {
   padding: "10px 16px",
   borderRadius: "10px",
-  border: "1px solid #cbd5e1",
-  backgroundColor: "#fff",
-  color: "#334155",
+  border: "1px solid rgba(242,240,236,0.12)",
+  backgroundColor: "#141414",
+  color: "#F2F0EC",
   fontWeight: 700,
   cursor: "pointer",
+  transition: "background-color 0.2s",
 };
 
 const dismissOverlayStyle = {

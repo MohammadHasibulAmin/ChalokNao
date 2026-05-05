@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useMemo, useState } from "react";
 import api from "../services/api";
 import OpenStreetMapInput from "../components/maps/OpenStreetMapInput";
@@ -168,9 +178,9 @@ const containerStyle = {
   maxWidth: "600px",
   margin: "20px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#141414",
 };
 
 const formStyle = { display: "flex", flexDirection: "column", gap: "12px" };
@@ -181,8 +191,8 @@ const listStyle = {
   gap: "10px",
   padding: "14px",
   borderRadius: "10px",
-  border: "1px solid #e5e7eb",
-  backgroundColor: "#fff",
+  border: "1px solid rgba(242,240,236,0.12)",
+  backgroundColor: "#141414",
 };
 const locationListStyle = { listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" };
 const locationItemStyle = {
@@ -191,12 +201,12 @@ const locationItemStyle = {
   gap: "12px",
   padding: "10px 12px",
   borderRadius: "8px",
-  backgroundColor: "#f8fafc",
-  border: "1px solid #e2e8f0",
+  backgroundColor: "#111",
+  border: "1px solid rgba(242,240,236,0.12)",
   alignItems: "center",
 };
 const locationActionsStyle = { display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" };
-const inputStyle = { flex: "1 1 260px", width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ccc" };
+const inputStyle = { flex: "1 1 260px", width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid rgba(242,240,236,0.18)", backgroundColor: "#0d0d0d", color: "rgba(242,240,236,0.94)" };
 const secondaryButtonStyle = { padding: "10px 14px", backgroundColor: "#0f766e", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
 const deleteButtonStyle = { padding: "8px 12px", backgroundColor: "#fee2e2", color: "#991b1b", border: "none", borderRadius: "5px", cursor: "pointer" };
 

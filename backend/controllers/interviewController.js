@@ -1,6 +1,97 @@
 const Interview = require("../models/Interview");
+const Hire = require("../models/Hire");
 const connectDB = require("../config/db");
 const { ObjectId } = require("mongodb");
+
+async function resolveDriverContext(db, driverRef) {
+  const driversCollection = db.collection("drivers");
+  const usersCollection = db.collection("user");
+
+  const query = [];
+  if (String(driverRef).length === 24 && /^[0-9a-fA-F]{24}$/.test(String(driverRef))) {
+    try {
+      query.push({ _id: new ObjectId(String(driverRef)) });
+    } catch (_) {
+      // ignore malformed object ids and fall back to userId lookup
+    }
+  }
+  query.push({ userId: String(driverRef) });
+
+  const driverDoc = await driversCollection.findOne({ $or: query });
+  if (!driverDoc) {
+    const driverUser = await usersCollection.findOne({ _id: new ObjectId(String(driverRef)) }).catch(() => null);
+    return {
+      driverDoc: null,
+      driverUserId: String(driverRef),
+      driverName: driverUser?.name || null,
+    };
+  }
+
+  const driverUserId = String(driverDoc.userId || driverRef);
+  const driverUser = await usersCollection.findOne({ _id: new ObjectId(driverUserId) }).catch(() => null);
+
+  return {
+    driverDoc,
+    driverUserId,
+    driverName: driverDoc.name || driverUser?.name || null,
+  };
+}
+
+async function emitInterviewUpdate(db, interview, status, extraData = {}) {
+  const statusLower = String(status || "").toLowerCase();
+  const ownerIdStr = String(interview.ownerId || "");
+  const driverContext = await resolveDriverContext(db, interview.driverId);
+
+  const targets = [
+    { userId: ownerIdStr, recipientRole: "owner" },
+    { userId: driverContext.driverUserId, recipientRole: "driver" },
+  ].filter((item) => item.userId);
+
+  for (const target of targets) {
+    const isOwner = target.recipientRole === "owner";
+    const notif = {
+      _id: new ObjectId(),
+      type: "interview",
+      status: statusLower,
+      message: isOwner
+        ? (statusLower === "accepted"
+            ? "Your interview request has been accepted by the driver."
+            : statusLower === "completed"
+              ? "The interview has been marked as done."
+              : "Your interview request has been rejected by the driver.")
+        : (statusLower === "accepted"
+            ? "You accepted an interview request."
+            : statusLower === "completed"
+              ? "The interview has been marked as done. Check Hire Management for the next step."
+              : "You rejected an interview request."),
+      data: {
+        interviewId: String(interview._id),
+        driverId: String(interview.driverId),
+        driverUserId: driverContext.driverUserId,
+        recipientUserId: target.userId,
+        recipientRole: target.recipientRole,
+        ...extraData,
+      },
+      read: false,
+      createdAt: new Date(),
+    };
+
+    try {
+      await db.collection("user").updateOne(
+        { _id: new ObjectId(String(target.userId)) },
+        { $push: { notifications: notif }, $set: { updatedAt: new Date() } }
+      );
+
+      const socketManager = require("../socket/socketManager");
+      const io = socketManager.getIo();
+      io.to(`user:${String(target.userId)}`).emit("interview:updated", notif);
+    } catch (err) {
+      console.warn("Interview notification write failed:", err.message);
+    }
+  }
+
+  return { driverContext };
+}
 
 exports.requestInterview = async (req, res) => {
   try {
@@ -52,34 +143,7 @@ exports.respondInterview = async (req, res) => {
 
     try {
       const db = await connectDB();
-      const ownerIdStr = String(interview.ownerId || "");
-      if (ownerIdStr) {
-        const statusLower = String(status).toLowerCase();
-        const notif = {
-          _id: new ObjectId(),
-          type: "interview",
-          status: statusLower,
-          message: statusLower === "accepted" 
-            ? "Your interview request has been accepted by the driver."
-            : "Your interview request has been rejected by the driver.",
-          data: { interviewId: String(interview._id), driverId: String(interview.driverId) },
-          read: false,
-          createdAt: new Date(),
-        };
-
-        await db.collection("user").updateOne(
-          { _id: new ObjectId(ownerIdStr) },
-          { $push: { notifications: notif }, $set: { updatedAt: new Date() } }
-        );
-
-        try {
-          const socketManager = require("../socket/socketManager");
-          const io = socketManager.getIo();
-          io.to(`user:${ownerIdStr}`).emit("interview:updated", notif);
-        } catch (err) {
-          console.warn("Interview socket emit failed:", err.message);
-        }
-      }
+      await emitInterviewUpdate(db, interview, status);
     } catch (err) {
       console.warn("Interview notification creation failed:", err.message);
     }
@@ -355,6 +419,36 @@ exports.updateOwnerInterview = async (req, res) => {
     const interview = await Interview.updateInterviewStatus(req.params.id, String(status).toLowerCase());
     if (!interview) {
       return res.status(404).json({ message: "Interview not found" });
+    }
+
+    const db = await connectDB();
+    const statusLower = String(status).toLowerCase();
+
+    if (statusLower === "completed") {
+      const driverContext = await resolveDriverContext(db, interview.driverId);
+      const existingHire = await db.collection("hires").findOne({ interviewId: String(interview._id) });
+
+      if (!existingHire) {
+        await Hire.createHire({
+          ownerId: String(interview.ownerId),
+          driverId: driverContext.driverUserId,
+          driverUserId: driverContext.driverUserId,
+          driverName: driverContext.driverName || null,
+          interviewId: String(interview._id),
+          salary: 0,
+          duration: "Not specified",
+          ownerConfirm: true,
+          driverConfirm: false,
+        });
+      }
+
+      await emitInterviewUpdate(db, interview, statusLower, {
+        hireCreated: true,
+      });
+    }
+
+    if (statusLower === "cancelled") {
+      await emitInterviewUpdate(db, interview, statusLower);
     }
 
     return res.json(interview);

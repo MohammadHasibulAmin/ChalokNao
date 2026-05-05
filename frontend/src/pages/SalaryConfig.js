@@ -1,4 +1,14 @@
-import React, { useState, useEffect } from "react";
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
+import { useState, useEffect } from "react";
 import api from "../services/api";
 
 const SalaryConfig = () => {
@@ -40,10 +50,15 @@ const SalaryConfig = () => {
   };
 
   const fetchOffers = async () => {
+    if (!userId) {
+      setOffers([]);
+      setOffersLoading(false);
+      return;
+    }
     setOffersLoading(true);
     try {
       const response = await api.get(`/offer/driver/list?userId=${userId}`);
-      setOffers(response.data || []);
+      setOffers(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Error loading salary offers:", err);
       setOffers([]);
@@ -99,9 +114,9 @@ const SalaryConfig = () => {
       if (sortBy === "recent") {
         return new Date(b.createdAt) - new Date(a.createdAt);
       } else if (sortBy === "highest") {
-        return b.amount - a.amount;
+        return ((b.salary || b.amount) || 0) - ((a.salary || a.amount) || 0);
       } else if (sortBy === "lowest") {
-        return a.amount - b.amount;
+        return ((a.salary || a.amount) || 0) - ((b.salary || b.amount) || 0);
       }
       return 0;
     });
@@ -110,14 +125,9 @@ const SalaryConfig = () => {
   };
 
   const getStatusBadge = (status) => {
-    const colors = {
-      pending: { bg: "#FFF3CD", color: "#856404" },
-      accepted: { bg: "#D4EDDA", color: "#155724" },
-      rejected: { bg: "#F8D7DA", color: "#721C24" },
-    };
-    const style = colors[status] || { bg: "#f0f0f0", color: "#333" };
+    const typeClass = status === "accepted" ? "badge-green" : status === "rejected" ? "badge-red" : "badge-gold";
     return (
-      <span style={{ padding: "5px 12px", backgroundColor: style.bg, color: style.color, borderRadius: "20px", fontSize: "12px", fontWeight: "bold" }}>
+      <span className={`badge ${typeClass}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -126,32 +136,33 @@ const SalaryConfig = () => {
   const filteredOffers = getFilteredAndSortedOffers();
 
   return (
-    <div style={containerStyle}>
-      <div style={headerStyle}>
+    <div className="cn-card salary-config-container">
+      <div className="salary-config-header">
         <div>
           <h2>💼 My Salary Configuration</h2>
-          <p style={{ color: "#666", marginTop: "5px" }}>
+          <p className="salary-config-subtitle">
             Set your expected salary to help employers find the right match
           </p>
         </div>
       </div>
 
       {message && (
-        <div style={{ ...messageStyle, backgroundColor: message.includes("✓") ? "#D4EDDA" : "#F8D7DA", borderLeft: `4px solid ${message.includes("✓") ? "#28a745" : "#dc3545"}` }}>
+        <div className={`salary-message ${message.includes("✓") ? "salary-message-success" : "salary-message-error"}`}>
           {message}
         </div>
       )}
 
-      <div style={contentWrapperStyle}>
+      <div className="salary-content-grid">
         {/* Salary Configuration Section */}
-        <div style={formSectionStyle}>
-          <h3 style={{ marginTop: "0" }}>Set Your Expected Salary</h3>
+        <div className="cn-card salary-card-section">
+          <h3>Set Your Expected Salary</h3>
 
-          <form onSubmit={handleSubmit} style={formStyle}>
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>
-                <span style={labelTextStyle}>Monthly Salary Expectation</span>
+          <form onSubmit={handleSubmit} className="salary-form">
+            <div className="salary-input-group">
+              <label className="salary-label">
+                <span>Monthly Salary Expectation</span>
                 <input
+                  className="salary-input"
                   type="number"
                   name="monthly"
                   placeholder="e.g., 50000"
@@ -159,18 +170,16 @@ const SalaryConfig = () => {
                   onChange={handleChange}
                   step="100"
                   min="0"
-                  style={inputStyle}
                 />
-                <small style={{ color: "#666", marginTop: "5px", display: "block" }}>
-                  Your expected monthly salary
-                </small>
+                <small>Your expected monthly salary</small>
               </label>
             </div>
 
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>
-                <span style={labelTextStyle}>Daily Salary Expectation</span>
+            <div className="salary-input-group">
+              <label className="salary-label">
+                <span>Daily Salary Expectation</span>
                 <input
+                  className="salary-input"
                   type="number"
                   name="daily"
                   placeholder="e.g., 2500"
@@ -178,15 +187,12 @@ const SalaryConfig = () => {
                   onChange={handleChange}
                   step="50"
                   min="0"
-                  style={inputStyle}
                 />
-                <small style={{ color: "#666", marginTop: "5px", display: "block" }}>
-                  Your expected daily rate
-                </small>
+                <small>Your expected daily rate</small>
               </label>
             </div>
 
-            <button type="submit" style={buttonStyle}>
+            <button type="submit" className="btn-primary">
               💾 Update Salary Configuration
             </button>
           </form>
@@ -194,23 +200,23 @@ const SalaryConfig = () => {
 
         {/* Current Configuration Display */}
         {currentSalary && (currentSalary.monthly || currentSalary.daily) && (
-          <div style={infoSectionStyle}>
-            <h3 style={{ marginTop: "0" }}>📊 Current Configuration</h3>
-            <div style={configBoxStyle}>
-              <div style={configItemStyle}>
-                <span style={{ color: "#666" }}>Monthly Expected:</span>
-                <p style={{ fontSize: "24px", fontWeight: "bold", color: "#2196F3", margin: "10px 0 0 0" }}>
+          <div className="cn-card salary-card-section">
+            <h3>📊 Current Configuration</h3>
+            <div className="salary-config-box">
+              <div className="salary-config-item">
+                <span>Monthly Expected:</span>
+                <p className="salary-config-value salary-config-monthly">
                   ${(currentSalary.monthly || 0).toLocaleString()}
                 </p>
               </div>
-              <div style={configItemStyle}>
-                <span style={{ color: "#666" }}>Daily Expected:</span>
-                <p style={{ fontSize: "24px", fontWeight: "bold", color: "#4CAF50", margin: "10px 0 0 0" }}>
+              <div className="salary-config-item">
+                <span>Daily Expected:</span>
+                <p className="salary-config-value salary-config-daily">
                   ${(currentSalary.daily || 0).toLocaleString()}
                 </p>
               </div>
             </div>
-            <p style={{ marginTop: "15px", padding: "10px", backgroundColor: "#E3F2FD", borderRadius: "5px", color: "#1565C0", fontSize: "14px" }}>
+            <p className="salary-tip">
               💡 Tip: Keep this updated to help employers make competitive offers
             </p>
           </div>
@@ -218,17 +224,14 @@ const SalaryConfig = () => {
       </div>
 
       {/* Quick Action to View Offers */}
-      <div style={quickActionStyle}>
+      <div className="cn-card salary-offers-action">
         <div>
-          <h3 style={{ marginTop: "0", marginBottom: "10px" }}>📩 Salary Offers</h3>
-          <p style={{ color: "#666", marginBottom: "15px" }}>
+          <h3>📩 Salary Offers</h3>
+          <p className="salary-config-subtitle">
             View all salary offers you've received from employers
           </p>
         </div>
-        <button
-          onClick={handleShowOffers}
-          style={viewOffersButtonStyle}
-        >
+        <button onClick={handleShowOffers} className="btn-ghost">
           View Salary Offers ({offers.length})
         </button>
       </div>
@@ -268,44 +271,44 @@ const SalaryConfig = () => {
             </div>
 
             {/* Offers List */}
-            <div style={offersContainerStyle}>
+            <div className="salary-offers-list">
               {offersLoading ? (
-                <p style={{ textAlign: "center", color: "#666" }}>Loading offers...</p>
+                <p className="salary-empty-message">Loading offers...</p>
               ) : filteredOffers.length === 0 ? (
-                <p style={{ textAlign: "center", color: "#999", padding: "20px" }}>
+                <p className="salary-empty-message">
                   {offers.length === 0 ? "No salary offers yet" : "No offers match your filters"}
                 </p>
               ) : (
                 filteredOffers.map((offer) => (
-                  <div key={offer._id} style={offerItemStyle}>
-                    <div style={offerHeaderInnerStyle}>
+                  <div key={offer._id} className="cn-card salary-offer-item">
+                    <div className="salary-offer-header">
                       <div>
-                        <h4 style={{ margin: "0 0 5px 0" }}>Salary Offer</h4>
-                        <p style={{ margin: "0", color: "#666", fontSize: "13px" }}>
-                          {new Date(offer.createdAt).toLocaleDateString()}
+                        <h4>Salary Offer</h4>
+                        <p className="salary-offer-date">
+                          {offer.createdAt ? new Date(offer.createdAt).toLocaleDateString() : 'Unknown date'}
                         </p>
                       </div>
                       {getStatusBadge(offer.status)}
                     </div>
 
-                    <div style={offerAmountStyle}>
-                      <span style={{ color: "#666" }}>Amount:</span>
-                      <p style={{ fontSize: "20px", fontWeight: "bold", color: "#2196F3", margin: "5px 0 0 0" }}>
-                        ${offer.amount.toLocaleString()}
+                    <div className="salary-offer-amount">
+                      <span>Amount:</span>
+                      <p className="salary-offer-value">
+                        ${(offer.salary !== undefined && offer.salary !== null) || (offer.amount !== undefined && offer.amount !== null) ? ((offer.salary || offer.amount) || 0).toLocaleString() : 'N/A'}
                       </p>
                     </div>
 
                     {offer.status === "pending" && (
-                      <div style={actionButtonsStyle}>
+                      <div className="salary-offer-actions">
                         <button
                           onClick={() => handleOfferResponse(offer._id, "accepted")}
-                          style={acceptButtonStyle}
+                          className="btn-primary"
                         >
                           ✓ Accept
                         </button>
                         <button
                           onClick={() => handleOfferResponse(offer._id, "rejected")}
-                          style={rejectButtonStyle}
+                          className="btn-ghost"
                         >
                           ✗ Reject
                         </button>
@@ -322,128 +325,7 @@ const SalaryConfig = () => {
   );
 };
 
-const containerStyle = {
-  maxWidth: "900px",
-  margin: "20px auto",
-  padding: "30px",
-  backgroundColor: "#f5f5f5",
-  borderRadius: "8px",
-};
 
-const headerStyle = {
-  marginBottom: "30px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "start",
-};
-
-const messageStyle = {
-  padding: "15px",
-  marginBottom: "20px",
-  borderRadius: "5px",
-  fontSize: "14px",
-  fontWeight: "bold",
-};
-
-const contentWrapperStyle = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: "20px",
-  marginBottom: "30px",
-};
-
-const formSectionStyle = {
-  backgroundColor: "white",
-  padding: "20px",
-  borderRadius: "8px",
-  border: "1px solid #ddd",
-};
-
-const infoSectionStyle = {
-  backgroundColor: "white",
-  padding: "20px",
-  borderRadius: "8px",
-  border: "1px solid #ddd",
-};
-
-const formStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "20px",
-};
-
-const inputGroupStyle = {
-  display: "flex",
-  flexDirection: "column",
-};
-
-const labelStyle = {
-  display: "flex",
-  flexDirection: "column",
-};
-
-const labelTextStyle = {
-  fontWeight: "bold",
-  marginBottom: "8px",
-  color: "#333",
-};
-
-const inputStyle = {
-  padding: "12px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-  fontSize: "14px",
-  fontFamily: "inherit",
-};
-
-const buttonStyle = {
-  padding: "12px",
-  backgroundColor: "#007bff",
-  color: "white",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "14px",
-  transition: "background-color 0.3s",
-};
-
-const configBoxStyle = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: "15px",
-  marginBottom: "15px",
-};
-
-const configItemStyle = {
-  padding: "15px",
-  backgroundColor: "#f9f9f9",
-  borderRadius: "5px",
-  border: "1px solid #e0e0e0",
-};
-
-const quickActionStyle = {
-  backgroundColor: "white",
-  padding: "20px",
-  borderRadius: "8px",
-  border: "1px solid #ddd",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-};
-
-const viewOffersButtonStyle = {
-  padding: "12px 24px",
-  backgroundColor: "#4CAF50",
-  color: "white",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "14px",
-  transition: "background-color 0.3s",
-  whiteSpace: "nowrap",
-};
 
 // Modal Styles
 const modalOverlayStyle = {
@@ -476,7 +358,7 @@ const modalHeaderStyle = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: "20px",
-  borderBottom: "1px solid #e0e0e0",
+  borderBottom: "1px solid rgba(242,240,236,0.18)",
 };
 
 const closeButtonStyle = {
@@ -484,7 +366,7 @@ const closeButtonStyle = {
   border: "none",
   fontSize: "24px",
   cursor: "pointer",
-  color: "#666",
+  color: "#D1D5DB",
   padding: "0",
   width: "30px",
   height: "30px",
@@ -500,74 +382,19 @@ const filtersStyle = {
   display: "flex",
   gap: "10px",
   padding: "15px 20px",
-  borderBottom: "1px solid #e0e0e0",
-  backgroundColor: "#f9f9f9",
+  borderBottom: "1px solid rgba(242,240,236,0.12)",
+  backgroundColor: "#141414",
 };
 
 const selectStyle = {
   flex: 1,
   padding: "8px 12px",
   borderRadius: "5px",
-  border: "1px solid #ccc",
+  border: "1px solid rgba(242,240,236,0.18)",
   fontSize: "13px",
-  backgroundColor: "white",
+  backgroundColor: "#0d0d0d",
+  color: "rgba(242,240,236,0.94)",
   cursor: "pointer",
-};
-
-const offersContainerStyle = {
-  flex: 1,
-  overflowY: "auto",
-  padding: "15px 20px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-};
-
-const offerItemStyle = {
-  padding: "15px",
-  backgroundColor: "#f9f9f9",
-  borderRadius: "6px",
-  border: "1px solid #e0e0e0",
-};
-
-const offerHeaderInnerStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "start",
-  marginBottom: "12px",
-};
-
-const offerAmountStyle = {
-  marginBottom: "12px",
-};
-
-const actionButtonsStyle = {
-  display: "flex",
-  gap: "8px",
-};
-
-const acceptButtonStyle = {
-  flex: 1,
-  padding: "8px 12px",
-  backgroundColor: "#4CAF50",
-  color: "white",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "13px",
-};
-
-const rejectButtonStyle = {
-  flex: 1,
-  padding: "8px 12px",
-  backgroundColor: "#f44336",
-  color: "white",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "13px",
 };
 
 export default SalaryConfig;

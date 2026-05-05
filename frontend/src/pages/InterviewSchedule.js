@@ -1,4 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import DirectChatModal from "../components/chat/DirectChatModal";
 
@@ -6,33 +17,47 @@ const InterviewSchedule = () => {
   const [scheduledInterviews, setScheduledInterviews] = useState([]);
   const [loadingInterviews, setLoadingInterviews] = useState(false);
   const [activeChatInterview, setActiveChatInterview] = useState(null);
+  const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
 
+  const fetchScheduledInterviews = useCallback(async () => {
+    if (!userId) return;
+    setLoadingInterviews(true);
+    try {
+      const res = await api.get(`/interviews/owner/${userId}`);
+      // Filter out completed and rejected interviews
+      const active = Array.isArray(res.data)
+        ? res.data.filter((iv) => {
+            const status = String(iv.status || "").toLowerCase();
+            return status !== "completed" && status !== "rejected";
+          })
+        : [];
+      setScheduledInterviews(active);
+    } catch (err) {
+      console.error("Error fetching interviews:", err.response?.data?.message || err.message);
+      setScheduledInterviews([]);
+    } finally {
+      setLoadingInterviews(false);
+    }
+  }, [userId]);
+
   useEffect(() => {
-    const fetchScheduledInterviews = async () => {
-      if (!userId) return;
-      setLoadingInterviews(true);
-      try {
-        const res = await api.get(`/interviews/owner/${userId}`);
-        // Filter out completed and rejected interviews
-        const active = Array.isArray(res.data) 
-          ? res.data.filter(iv => {
-              const status = String(iv.status || "").toLowerCase();
-              return status !== "completed" && status !== "rejected";
-            })
-          : [];
-        setScheduledInterviews(active);
-      } catch (err) {
-        console.error("Error fetching interviews:", err.response?.data?.message || err.message);
-        setScheduledInterviews([]);
-      } finally {
-        setLoadingInterviews(false);
+    fetchScheduledInterviews();
+  }, [fetchScheduledInterviews]);
+
+  useEffect(() => {
+    const handleAppNotification = (event) => {
+      const notif = event?.detail;
+      if (notif?.type === "interview") {
+        fetchScheduledInterviews();
       }
     };
-    fetchScheduledInterviews();
-  }, [userId]);
+
+    window.addEventListener("app:notification", handleAppNotification);
+    return () => window.removeEventListener("app:notification", handleAppNotification);
+  }, [fetchScheduledInterviews]);
 
   const acceptedChatInterviews = useMemo(() => {
     return scheduledInterviews.filter(
@@ -42,25 +67,12 @@ const InterviewSchedule = () => {
 
   const handleDoneInterview = async (interview) => {
     try {
-      // Mark interview as completed
       await api.put(`/interviews/owner/interview/${interview._id}`, {
         status: "completed",
       });
 
-      // Auto-create hire and navigate to HireManagement
-      const hireData = {
-        driverId: interview.driverId,
-        driverUserId: interview.driverUserId || interview.driverId,
-        driverName: interview.driverName,
-        interviewId: interview._id,
-        salary: 0,
-        duration: "Not specified",
-      };
-      await api.post(`/hire/request`, hireData);
-
-      // Remove completed interview from display and navigate
-      setScheduledInterviews(prev => prev.filter(iv => iv._id !== interview._id));
-      window.location.href = "/hire-management";
+      setScheduledInterviews((prev) => prev.filter((iv) => iv._id !== interview._id));
+      navigate("/hire-management", { replace: true });
     } catch (err) {
       console.error("Error marking interview as done:", err.response?.data?.message || err.message);
     }
@@ -142,9 +154,9 @@ const containerStyle = {
   maxWidth: "800px",
   margin: "20px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#141414",
 };
 
 const interviewsListStyle = {
@@ -156,9 +168,9 @@ const interviewsListStyle = {
 
 const interviewCardStyle = {
   padding: "16px",
-  border: "1px solid #e5e7eb",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9fafb",
+  backgroundColor: "#111",
   display: "flex",
   gap: "12px",
 };
@@ -168,11 +180,11 @@ const chatBadgeStyle = {
   alignItems: "center",
   padding: "4px 10px",
   borderRadius: "999px",
-  backgroundColor: "#ede9fe",
-  color: "#6b21a8",
+  backgroundColor: "#111",
+  color: "rgba(242,240,236,0.92)",
   fontSize: "12px",
   fontWeight: 700,
-  border: "1px solid #ddd6fe",
+  border: "1px solid rgba(242,240,236,0.12)",
 };
 
 const chatButtonStyle = {
@@ -213,7 +225,7 @@ const readyBadgeStyle = {
   color: "#6b21a8",
   fontSize: "12px",
   fontWeight: 700,
-  border: "1px solid #ddd6fe",
+  border: "1px solid rgba(242,240,236,0.12)",
 };
 
 const doneButtonStyle = {

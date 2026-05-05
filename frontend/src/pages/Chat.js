@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 
@@ -48,16 +58,16 @@ const Chat = () => {
     <div style={containerStyle}>
       <h2>Support Chat</h2>
       {statusMessage && <p style={{ color: "#d7263d" }}>{statusMessage}</p>}
-      <p style={{ color: "#666", marginTop: "-8px" }}>
+      <p style={{ color: "#D1D5DB", marginTop: "-8px" }}>
         This page shows your support conversation. You can also use the floating chat icon at bottom-right from any screen.
       </p>
 
       <div style={chatBoxStyle}>
         <div style={messagesStyle}>
           {isLoading ? (
-            <p style={{ textAlign: "center", color: "#999" }}>Loading messages...</p>
+            <p style={{ textAlign: "center", color: "#B0B0B0" }}>Loading messages...</p>
           ) : messages.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#999" }}>No messages yet</p>
+            <p style={{ textAlign: "center", color: "#B0B0B0" }}>No messages yet</p>
           ) : (
             messages.map((msg, idx) => (
               <div key={idx} style={{ ...messageStyle, alignSelf: msg.senderId === userId ? "flex-end" : "flex-start" }}>
@@ -93,16 +103,16 @@ const containerStyle = {
   maxWidth: "700px",
   margin: "20px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#111",
 };
 
-const chatBoxStyle = { display: "flex", flexDirection: "column", height: "500px", backgroundColor: "#fff", borderRadius: "8px", border: "1px solid #ddd" };
+const chatBoxStyle = { display: "flex", flexDirection: "column", height: "500px", backgroundColor: "#141414", borderRadius: "8px", border: "1px solid rgba(242,240,236,0.12)" };
 const messagesStyle = { flex: 1, overflowY: "auto", padding: "15px", display: "flex", flexDirection: "column", gap: "10px" };
-const messageStyle = { maxWidth: "70%", padding: "10px 15px", backgroundColor: "#007bff", color: "#fff", borderRadius: "8px", display: "flex", flexDirection: "column" };
-const formStyle = { display: "flex", flexDirection: "column", gap: "10px", paddingTop: "15px", borderTop: "1px solid #ddd" };
-const inputStyle = { padding: "10px", borderRadius: "5px", border: "1px solid #ccc" };
-const buttonStyle = { padding: "10px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
+const messageStyle = { maxWidth: "70%", padding: "10px 15px", backgroundColor: "#E8321A", color: "#fff", borderRadius: "8px", display: "flex", flexDirection: "column" };
+const formStyle = { display: "flex", flexDirection: "column", gap: "10px", paddingTop: "15px", borderTop: "1px solid rgba(242,240,236,0.12)" };
+const inputStyle = { padding: "10px", borderRadius: "5px", border: "1px solid rgba(242,240,236,0.14)", color: "#F2F0EC", backgroundColor: "#0D0D0D" };
+const buttonStyle = { padding: "10px", backgroundColor: "#E8321A", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
 
 export default Chat;

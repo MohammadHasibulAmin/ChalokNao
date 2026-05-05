@@ -1,3 +1,12 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
@@ -16,37 +25,15 @@ const publicDirectoryKey = "chaloknao_public_owner_directory";
 
 const defaultFeedback = [];
 
-const toastContainerStyle = {
-  position: "fixed",
-  top: 20,
-  right: 20,
-  zIndex: 9999,
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-  maxWidth: 400,
-};
-
-const toastStyle = {
-  padding: "14px 16px",
-  backgroundColor: "#0ea5e9",
-  color: "#fff",
-  borderRadius: 8,
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  animation: "slideIn 0.3s ease",
-};
-
 const cardStyle = {
   maxWidth: "980px",
   margin: "24px auto",
   padding: "24px",
   borderRadius: "16px",
-  border: "1px solid #e5e7eb",
-  background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
-  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.08)",
+  border: "1px solid rgba(242,240,236,0.08)",
+  background: "linear-gradient(180deg, #1A1A1A 0%, #0D0D0D 100%)",
+  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+  color: "#F2F0EC",
 };
 
 const gridStyle = {
@@ -58,8 +45,9 @@ const gridStyle = {
 const panelStyle = {
   padding: "16px",
   borderRadius: "14px",
-  backgroundColor: "#fff",
-  border: "1px solid #e5e7eb",
+  backgroundColor: "#141414",
+  border: "1px solid rgba(242,240,236,0.08)",
+  color: "#F2F0EC",
 };
 
 const labelStyle = {
@@ -67,34 +55,37 @@ const labelStyle = {
   fontSize: "13px",
   fontWeight: 700,
   marginBottom: "6px",
-  color: "#334155",
+  color: "rgba(242,240,236,0.9)",
 };
 
 const inputStyle = {
   width: "100%",
   padding: "12px",
   borderRadius: "10px",
-  border: "1px solid #cbd5e1",
+  border: "1px solid rgba(242,240,236,0.12)",
   fontSize: "14px",
   marginBottom: "12px",
+  backgroundColor: "#0D0D0D",
+  color: "#F2F0EC",
 };
 
 const buttonStyle = {
   padding: "12px 16px",
   border: "none",
   borderRadius: "10px",
-  backgroundColor: "#0f766e",
-  color: "#fff",
+  backgroundColor: "#E8321A",
+  color: "#F2F0EC",
   fontWeight: 700,
   cursor: "pointer",
+  transition: "background-color 0.2s",
 };
 
 const badgeStyle = {
   display: "inline-block",
   padding: "4px 10px",
   borderRadius: "999px",
-  backgroundColor: "#e0f2fe",
-  color: "#075985",
+  backgroundColor: "rgba(232, 50, 26, 0.15)",
+  color: "#E8321A",
   fontSize: "12px",
   fontWeight: 700,
   marginRight: "8px",
@@ -155,7 +146,6 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
-  const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
     setProfile(baseProfileFromUser(currentUser, isOwnerUser));
@@ -186,22 +176,6 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
     localStorage.setItem(feedbackStorageKey, JSON.stringify(feedbackList));
     publishOwnerProfile(currentUser, profile, feedbackList);
   }, [feedbackList, feedbackStorageKey, profile, currentUser, isOwnerUser]);
-
-  useEffect(() => {
-    const handleAppNotif = (e) => {
-      const notif = e?.detail;
-      if (!notif) return;
-      setToasts((t) => [...t, { id: String(notif._id || Date.now()), ...notif }]);
-    };
-    window.addEventListener("app:notification", handleAppNotif);
-    return () => {
-      window.removeEventListener("app:notification", handleAppNotif);
-    };
-  }, []);
-
-  const dismissToast = (toastId) => {
-    setToasts((t) => t.filter((x) => String(x.id) !== String(toastId)));
-  };
 
   const handleProfileChange = (event) => {
     const { name, value } = event.target;
@@ -264,42 +238,17 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
 
   return (
     <div style={cardStyle}>
-      {/* Notification Toasts */}
-      <div style={toastContainerStyle}>
-        {toasts.map((toast) => (
-          <div key={toast.id} style={toastStyle}>
-            <div style={{ flex: 1 }}>
-              <strong style={{ color: "#fff" }}>
-                {toast.type === "message" ? "📨 New Message" : toast.message || "Notification"}
-              </strong>
-            </div>
-            <button
-              onClick={() => dismissToast(toast.id)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#fff",
-                cursor: "pointer",
-                fontSize: 18,
-              }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
-
       {/* Chat Widget */}
       {currentUser && <SupportChatWidget user={currentUser} />}
 
       <div style={{ marginBottom: "20px" }}>
-        <p style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "#0f766e", fontWeight: 800, marginBottom: "8px" }}>
+        <p style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "#E8321A", fontWeight: 800, marginBottom: "8px" }}>
           Public Owner Profile
         </p>
-        <h2 style={{ margin: 0, fontSize: "32px", color: "#0f172a" }}>
+        <h2 style={{ margin: 0, fontSize: "32px", color: "#F2F0EC" }}>
           {profile.name || "Owner profile not completed yet"}
         </h2>
-        <p style={{ marginTop: "10px", color: "#475569", lineHeight: 1.6 }}>
+        <p style={{ marginTop: "10px", color: "rgba(242,240,236,0.7)", lineHeight: 1.6 }}>
           {profile.description || "This owner has not filled out the public profile description yet."}
         </p>
         <div style={{ marginTop: "16px" }}>
@@ -311,7 +260,7 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
 
       <div style={gridStyle}>
         <div style={panelStyle}>
-          <h3 style={{ marginTop: 0 }}>Owner Details</h3>
+          <h3 style={{ marginTop: 0, color: "#F2F0EC" }}>Owner Details</h3>
           {isOwnerUser ? (
             <form onSubmit={handleProfileSubmit}>
               <label style={labelStyle} htmlFor="name">Name</label>
@@ -336,39 +285,39 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
                 placeholder="Search job location with OpenStreetMap"
               />
               {!!jobLocationValue && (
-                <OpenStreetMapLink label="Open job location in OpenStreetMap" query={jobLocationValue} style={{ fontSize: "13px" }} />
+                <OpenStreetMapLink label="Open job location in OpenStreetMap" query={jobLocationValue} style={{ fontSize: "13px", color: "#E8321A" }} />
               )}
 
               <label style={labelStyle} htmlFor="description">Public Description</label>
               <textarea id="description" name="description" value={profile.description} onChange={handleProfileChange} rows={4} style={{ ...inputStyle, resize: "vertical" }} placeholder="Describe your hiring needs" />
 
               <button type="submit" style={buttonStyle}>Save Profile</button>
-              {profileSaved && <p style={{ marginTop: "10px", color: "#047857" }}>Profile saved for this owner account.</p>}
+              {profileSaved && <p style={{ marginTop: "10px", color: "#10b981" }}>Profile saved for this owner account.</p>}
             </form>
           ) : (
             <>
-              <p><strong>Name:</strong> {profile.name || "Not provided yet"}</p>
-              <p><strong>Company:</strong> {profile.company || "Not provided yet"}</p>
-              <p><strong>Job Location:</strong> {jobLocationValue || "Not provided yet"}</p>
-              {!!jobLocationValue && <OpenStreetMapLink label="Open job location in OpenStreetMap" query={jobLocationValue} style={{ fontSize: "13px" }} />}
-              <p><strong>Phone:</strong> {profile.phone || "Not provided yet"}</p>
-              <p><strong>Email:</strong> {profile.email || "Not provided yet"}</p>
+              <p style={{ color: "#F2F0EC" }}><strong>Name:</strong> {profile.name || "Not provided yet"}</p>
+              <p style={{ color: "#F2F0EC" }}><strong>Company:</strong> {profile.company || "Not provided yet"}</p>
+              <p style={{ color: "#F2F0EC" }}><strong>Job Location:</strong> {jobLocationValue || "Not provided yet"}</p>
+              {!!jobLocationValue && <OpenStreetMapLink label="Open job location in OpenStreetMap" query={jobLocationValue} style={{ fontSize: "13px", color: "#E8321A" }} />}
+              <p style={{ color: "#F2F0EC" }}><strong>Phone:</strong> {profile.phone || "Not provided yet"}</p>
+              <p style={{ color: "#F2F0EC" }}><strong>Email:</strong> {profile.email || "Not provided yet"}</p>
             </>
           )}
         </div>
       </div>
 
       <div style={{ ...panelStyle, marginTop: "18px" }}>
-        <h3 style={{ marginTop: 0 }}>Driver Feedback & Ratings</h3>
+        <h3 style={{ marginTop: 0, color: "#F2F0EC" }}>Driver Feedback & Ratings</h3>
         <div style={{ marginBottom: "20px" }}>
           {feedbackList.map((entry) => (
-            <div key={entry.id} style={{ padding: "14px 0", borderBottom: "1px solid #e2e8f0" }}>
+            <div key={entry.id} style={{ padding: "14px 0", borderBottom: "1px solid rgba(242,240,236,0.08)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                <strong>{entry.driverName}</strong>
-                <span>Rating: {entry.rating}/5</span>
+                <strong style={{ color: "#F2F0EC" }}>{entry.driverName}</strong>
+                <span style={{ color: "rgba(242,240,236,0.8)" }}>Rating: {entry.rating}/5</span>
               </div>
-              <p style={{ margin: "8px 0", color: "#334155" }}>{entry.comment}</p>
-              <small style={{ color: "#64748b" }}>{entry.createdAt}</small>
+              <p style={{ margin: "8px 0", color: "rgba(242,240,236,0.7)" }}>{entry.comment}</p>
+              <small style={{ color: "rgba(242,240,236,0.6)" }}>{entry.createdAt}</small>
             </div>
           ))}
         </div>
@@ -409,7 +358,7 @@ const OwnerProfile = ({ currentRole, currentUser }) => {
             <button type="submit" style={buttonStyle}>Submit Feedback</button>
           </form>
         ) : (
-          <p style={{ marginBottom: 0, color: "#475569" }}>
+          <p style={{ marginBottom: 0, color: "rgba(242,240,236,0.7)" }}>
             Drivers can submit their feedback and ratings here. Owners and other users can view the public reviews above.
           </p>
         )}

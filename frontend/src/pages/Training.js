@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 
@@ -154,7 +164,7 @@ const Training = () => {
                   <h4 style={{ margin: 0 }}>{module.title}</h4>
                   <p style={descStyle}>{module.content}</p>
                 </div>
-                <span style={{ ...statusPillStyle, backgroundColor: completed ? "#dcfce7" : "#e0f2fe", color: completed ? "#166534" : "#075985" }}>
+                <span style={{ ...statusPillStyle, backgroundColor: completed ? "#144E2A" : "#111", color: completed ? "#a7f3d0" : "rgba(242,240,236,0.92)" }}>
                   {completed ? "Completed" : "In progress"}
                 </span>
               </div>
@@ -210,16 +220,16 @@ const containerStyle = {
   maxWidth: "980px",
   margin: "20px auto",
   padding: "22px",
-  border: "1px solid #e2e8f0",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "20px",
-  backgroundColor: "#f8fafc",
+  backgroundColor: "#111",
 };
 
 const heroStyle = {
   borderRadius: "18px",
   padding: "20px",
   marginBottom: "16px",
-  background: "linear-gradient(145deg, #0f172a, #0f766e)",
+  background: "linear-gradient(145deg, #0D0D0D, #141414)",
   color: "#fff",
   display: "grid",
   gap: "16px",
@@ -231,8 +241,8 @@ const heroTitleStyle = { margin: "8px 0 6px", fontSize: "28px" };
 const heroTextStyle = { margin: 0, lineHeight: 1.55, opacity: 0.95, fontSize: "14px" };
 
 const overallCardStyle = {
-  backgroundColor: "rgba(255,255,255,0.14)",
-  border: "1px solid rgba(255,255,255,0.25)",
+  backgroundColor: "rgba(255,255,255,0.08)",
+  border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: "14px",
   padding: "14px",
 };
@@ -265,19 +275,19 @@ const badgePillStyle = {
 
 const listItemStyle = {
   padding: "16px",
-  border: "1px solid #dbe5ef",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "14px",
   marginBottom: "12px",
-  backgroundColor: "#fff",
-  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.05)",
+  backgroundColor: "#141414",
+  boxShadow: "0 8px 18px rgba(0, 0, 0, 0.35)",
 };
 
 const cardHeaderStyle = { display: "flex", justifyContent: "space-between", gap: "14px", alignItems: "flex-start" };
-const descStyle = { margin: "6px 0 0", color: "#475569", lineHeight: 1.5, fontSize: "14px" };
+const descStyle = { margin: "6px 0 0", color: "rgba(242,240,236,0.78)", lineHeight: 1.5, fontSize: "14px" };
 const statusPillStyle = { borderRadius: "999px", padding: "4px 10px", fontSize: "12px", fontWeight: 700 };
-const moduleMetaStyle = { marginTop: "8px", display: "flex", gap: "10px", flexWrap: "wrap", color: "#334155", fontSize: "13px" };
+const moduleMetaStyle = { marginTop: "8px", display: "flex", gap: "10px", flexWrap: "wrap", color: "rgba(242,240,236,0.78)", fontSize: "13px" };
 
-const progressBarStyle = { width: "100%", height: "12px", backgroundColor: "#e2e8f0", borderRadius: "999px", marginTop: "12px", overflow: "hidden" };
+const progressBarStyle = { width: "100%", height: "12px", backgroundColor: "#111", borderRadius: "999px", marginTop: "12px", overflow: "hidden" };
 const progressFillStyle = { height: "100%", borderRadius: "999px", transition: "width 220ms ease" };
 
 const actionRowStyle = {

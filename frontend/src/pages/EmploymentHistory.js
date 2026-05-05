@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 
@@ -39,7 +49,7 @@ const EmploymentHistory = () => {
     }
 
     try {
-      const response = await api.get(`/offers/driver/list?userId=${userId}`);
+      const response = await api.get(`/offer/driver/list?userId=${userId}`);
       const pendingOffers = Array.isArray(response.data)
         ? response.data.filter((offer) => offer.status === "pending")
         : [];
@@ -53,6 +63,24 @@ const EmploymentHistory = () => {
   useEffect(() => {
     loadEmploymentHistory();
     loadJobOffers();
+  }, [loadEmploymentHistory, loadJobOffers]);
+
+  useEffect(() => {
+    const handleAppNotification = (event) => {
+      const notif = event?.detail;
+      if (!notif) return;
+
+      if (notif.type === "offer") {
+        loadJobOffers();
+      }
+
+      if (notif.type === "contract") {
+        loadEmploymentHistory();
+      }
+    };
+
+    window.addEventListener("app:notification", handleAppNotification);
+    return () => window.removeEventListener("app:notification", handleAppNotification);
   }, [loadEmploymentHistory, loadJobOffers]);
 
   const handleChange = (e) => {
@@ -96,7 +124,7 @@ const EmploymentHistory = () => {
 
   const handleOfferResponse = async (offerId, status) => {
     try {
-      await api.put(`/offers/${offerId}/status`, {
+      await api.put(`/offer/${offerId}/status`, {
         status,
       });
       setMessage(`Job offer ${status}!`);
@@ -115,16 +143,16 @@ const EmploymentHistory = () => {
       <div style={{ marginBottom: "30px" }}>
         <h3 style={{ borderBottom: "2px solid #007bff", paddingBottom: "10px" }}>Pending Job Offers</h3>
         {jobOffers.length === 0 ? (
-          <p style={{ color: "#666" }}>No pending job offers.</p>
+          <p style={{ color: "#D1D5DB" }}>No pending job offers.</p>
         ) : (
           jobOffers.map((offer) => (
             <div key={offer._id} style={jobOfferCardStyle}>
               <div>
                 <h4 style={{ margin: "0 0 8px 0" }}>Job Offer from Owner</h4>
-                <p style={{ margin: "4px 0", color: "#666" }}>
-                  <strong>Salary:</strong> ${offer.salary}
+                <p style={{ margin: "4px 0", color: "#D1D5DB" }}>
+                  <strong>Salary:</strong> {offer.salary ? `$${offer.salary}` : "To be confirmed"}
                 </p>
-                <p style={{ margin: "4px 0", color: "#666" }}>
+                <p style={{ margin: "4px 0", color: "#D1D5DB" }}>
                   <strong>Duration:</strong> {offer.duration || "Not specified"}
                 </p>
                 <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
@@ -206,23 +234,23 @@ const containerStyle = {
   maxWidth: "600px",
   margin: "20px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#141414",
 };
 
 const formStyle = { display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" };
 const inputStyle = { padding: "10px", borderRadius: "5px", border: "1px solid #ccc" };
 const buttonStyle = { padding: "10px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
 const deleteButtonStyle = { ...buttonStyle, backgroundColor: "#dc3545", marginTop: "10px" };
-const listItemStyle = { padding: "15px", border: "1px solid #ddd", borderRadius: "5px", marginBottom: "10px", backgroundColor: "#fff" };
+const listItemStyle = { padding: "15px", border: "1px solid rgba(242,240,236,0.12)", borderRadius: "5px", marginBottom: "10px", backgroundColor: "#111" };
 
 const jobOfferCardStyle = {
   padding: "15px",
   border: "2px solid #007bff",
   borderRadius: "8px",
   marginBottom: "12px",
-  backgroundColor: "#f0f7ff",
+  backgroundColor: "#111",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",

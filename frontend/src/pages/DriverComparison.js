@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
@@ -203,21 +213,21 @@ const containerStyle = {
   maxWidth: "900px",
   margin: "20px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#141414",
 };
 
 const formStyle = { display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" };
-const buttonStyle = { padding: "10px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
+const buttonStyle = { padding: "10px", backgroundColor: "#E8321A", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
 // table styles removed — kept earlier table code replaced by card layout
 const compareChipStyle = {
   display: "inline-flex",
   alignItems: "center",
   padding: "4px 10px",
   borderRadius: "999px",
-  backgroundColor: "#e0f2fe",
-  color: "#075985",
+  backgroundColor: "#111",
+  color: "rgba(242,240,236,0.92)",
   fontSize: "12px",
   fontWeight: 700,
 };
@@ -233,9 +243,9 @@ const chipCloseButtonStyle = {
 };
 const clearCompareButtonStyle = {
   padding: "8px 12px",
-  backgroundColor: "#fff",
-  color: "#0f172a",
-  border: "1px solid #cbd5e1",
+  backgroundColor: "#111",
+  color: "rgba(242,240,236,0.92)",
+  border: "1px solid rgba(242,240,236,0.16)",
   borderRadius: "5px",
   cursor: "pointer",
 };

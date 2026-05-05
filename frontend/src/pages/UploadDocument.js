@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 
@@ -217,7 +227,7 @@ const ProfileVerification = () => {
 
 const pageWrapStyle = {
     minHeight: "calc(100vh - 90px)",
-    background: "radial-gradient(circle at top right, #dbeafe 0%, #f0f9ff 42%, #ffffff 100%)",
+    background: "radial-gradient(circle at top right, rgba(15,15,15,0.9) 0%, rgba(20,20,20,0.95) 42%, #0D0D0D 100%)",
     padding: "26px 16px",
 };
 
@@ -225,10 +235,10 @@ const cardStyle = {
     width: "min(920px, 100%)",
     margin: "0 auto",
     borderRadius: "20px",
-    border: "1px solid #dbeafe",
-    backgroundColor: "#ffffff",
+    border: "1px solid rgba(242,240,236,0.12)",
+    backgroundColor: "#141414",
     padding: "22px",
-    boxShadow: "0 16px 40px rgba(30, 64, 175, 0.12)",
+    boxShadow: "0 16px 40px rgba(0, 0, 0, 0.45)",
 };
 
 const headerRowStyle = {
@@ -294,19 +304,19 @@ const uploadBoxStyle = {
     display: "flex",
     flexDirection: "column",
     gap: "8px",
-    border: "1px dashed #93c5fd",
+    border: "1px dashed rgba(242,240,236,0.24)",
     borderRadius: "14px",
-    backgroundColor: "#eff6ff",
+    backgroundColor: "#0D0D0D",
     padding: "14px",
 };
 
 const uploadTitleStyle = {
     fontWeight: 800,
-    color: "#1e3a8a",
+    color: "#F2F0EC",
 };
 
 const uploadHintStyle = {
-    color: "#475569",
+    color: "rgba(242,240,236,0.78)",
     fontSize: "13px",
 };
 
@@ -315,7 +325,7 @@ const fileInputStyle = {
 };
 
 const fileNameStyle = {
-    color: "#1f2937",
+    color: "rgba(242,240,236,0.88)",
     fontSize: "12px",
     fontWeight: 600,
     overflow: "hidden",
@@ -333,7 +343,7 @@ const actionRowStyle = {
 const primaryButtonStyle = {
     border: "none",
     borderRadius: "12px",
-    backgroundColor: "#1d4ed8",
+    backgroundColor: "#E8321A",
     color: "#fff",
     padding: "11px 16px",
     fontSize: "14px",
@@ -342,10 +352,10 @@ const primaryButtonStyle = {
 };
 
 const secondaryButtonStyle = {
-    border: "1px solid #93c5fd",
+    border: "1px solid rgba(242,240,236,0.16)",
     borderRadius: "12px",
-    backgroundColor: "#fff",
-    color: "#1e3a8a",
+    backgroundColor: "#141414",
+    color: "#F2F0EC",
     padding: "11px 16px",
     fontSize: "14px",
     fontWeight: 700,

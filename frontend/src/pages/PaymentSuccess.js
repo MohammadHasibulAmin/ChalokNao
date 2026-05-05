@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
@@ -61,14 +71,14 @@ const PaymentSuccess = () => {
             {success ? (
               <>
                 <h2 style={{ color: "#28a745" }}>✓ {message}</h2>
-                <p style={{ marginTop: "20px", color: "#666" }}>
+                <p style={{ marginTop: "20px", color: "#D1D5DB" }}>
                   Redirecting to contract dashboard...
                 </p>
               </>
             ) : (
               <>
                 <h2 style={{ color: "#dc3545" }}>✗ Payment Failed</h2>
-                <p style={{ marginTop: "20px", color: "#666" }}>{message}</p>
+                <p style={{ marginTop: "20px", color: "#D1D5DB" }}>{message}</p>
                 <button
                   onClick={() => navigate("/hire-management")}
                   style={buttonStyle}
@@ -89,14 +99,14 @@ const containerStyle = {
   justifyContent: "center",
   alignItems: "center",
   minHeight: "100vh",
-  backgroundColor: "#f5f5f5",
+  backgroundColor: "#0D0D0D",
 };
 
 const cardStyle = {
-  backgroundColor: "#fff",
+  backgroundColor: "#141414",
   padding: "40px",
   borderRadius: "10px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+  boxShadow: "0 2px 20px rgba(0,0,0,0.45)",
   textAlign: "center",
   minWidth: "400px",
 };

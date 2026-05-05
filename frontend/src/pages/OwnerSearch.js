@@ -1,3 +1,13 @@
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
@@ -22,11 +32,11 @@ const heroStyle = {
 };
 
 const panelStyle = {
-  backgroundColor: "#fff",
-  border: "1px solid #e2e8f0",
+  backgroundColor: "#141414",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "18px",
   padding: "18px",
-  boxShadow: "0 12px 24px rgba(15, 23, 42, 0.06)",
+  boxShadow: "0 12px 24px rgba(0, 0, 0, 0.35)",
 };
 
 const filterGrid = {
@@ -39,16 +49,17 @@ const inputStyle = {
   width: "100%",
   padding: "12px",
   borderRadius: "10px",
-  border: "1px solid #cbd5e1",
+  border: "1px solid rgba(242,240,236,0.14)",
   fontSize: "14px",
-  backgroundColor: "#fff",
+  backgroundColor: "#0D0D0D",
+  color: "#F2F0EC",
 };
 
 const buttonStyle = {
   padding: "12px 16px",
   borderRadius: "10px",
   border: "none",
-  backgroundColor: "#0f766e",
+  backgroundColor: "#E8321A",
   color: "#fff",
   fontWeight: 700,
   cursor: "pointer",
@@ -65,9 +76,9 @@ const listStyle = {
 const cardStyle = {
   padding: "16px",
   borderRadius: "16px",
-  border: "1px solid #e2e8f0",
-  backgroundColor: "#fff",
-  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.04)",
+  border: "1px solid rgba(242,240,236,0.12)",
+  backgroundColor: "#141414",
+  boxShadow: "0 8px 18px rgba(0, 0, 0, 0.35)",
 };
 
 const metaStyle = {
@@ -81,14 +92,14 @@ const badgeStyle = {
   display: "inline-block",
   padding: "4px 10px",
   borderRadius: "999px",
-  backgroundColor: "#e0f2fe",
-  color: "#075985",
+  backgroundColor: "rgba(232,50,26,0.12)",
+  color: "#F2F0EC",
   fontSize: "12px",
   fontWeight: 700,
 };
 
 const mutedStyle = {
-  color: "#64748b",
+  color: "rgba(242,240,236,0.78)",
   fontSize: "14px",
 };
 
@@ -105,7 +116,7 @@ const profileLinkStyle = {
   marginTop: "8px",
   fontSize: "13px",
   fontWeight: 700,
-  color: "#0f766e",
+  color: "#E8321A",
   textDecoration: "none",
 };
 

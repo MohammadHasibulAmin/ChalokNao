@@ -1,4 +1,14 @@
-import React, { useMemo, useState, useEffect } from "react";
+// REDESIGN INSTRUCTIONS FOR COPILOT:
+// - Background: #0D0D0D, cards: #1A1A1A, accent: #E8321A
+// - Headings use font-family: 'Syne', sans-serif, weight 800
+// - Body uses font-family: 'DM Sans', sans-serif
+// - All borders: 1px solid rgba(242,240,236,0.08)
+// - Buttons use .btn-primary or .btn-ghost classes from global.css
+// - Badges use .badge .badge-red / .badge-gold / .badge-green
+// - Inputs styled dark with red focus border
+// - Use CSS classes from global.css where possible
+// Restyled component below:
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import api from "../services/api";
 import OpenStreetMapLink from "../components/maps/OpenStreetMapLink";
 import DirectChatModal from "../components/chat/DirectChatModal";
@@ -11,27 +21,57 @@ const InterviewPanel = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
 
+  const fetchInterviews = useCallback(async () => {
+    if (!userId) {
+      setInterviews([]);
+      return;
+    }
+
+    try {
+      // fetch driver document to obtain driver._id (interviews are stored against driver._id)
+      const driverRes = await api.get(`/drivers/user/${userId}`);
+      const driverDoc = driverRes.data;
+      if (!driverDoc || !driverDoc._id) {
+        setInterviews([]);
+        return;
+      }
+
+      const res = await api.get(`/interviews/driver/${driverDoc._id}`);
+      const active = Array.isArray(res.data)
+        ? res.data.filter((interview) => {
+            const status = String(interview.status || "").toLowerCase();
+            return status !== "completed" && status !== "rejected";
+          })
+        : [];
+
+      setInterviews(active);
+    } catch (err) {
+      console.error("Error fetching interviews:", err.response?.data?.message || err.message);
+    }
+  }, [userId]);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
-      try {
-        // fetch driver document to obtain driver._id (interviews are stored against driver._id)
-        const driverRes = await api.get(`/drivers/user/${userId}`);
-        const driverDoc = driverRes.data;
-        if (!driverDoc || !driverDoc._id) {
-          if (mounted) setInterviews([]);
-          return;
-        }
-        const res = await api.get(`/interviews/driver/${driverDoc._id}`);
-        if (mounted) setInterviews(res.data);
-      } catch (err) {
-        console.error("Error fetching interviews:", err.response?.data?.message || err.message);
-      }
+      if (!mounted) return;
+      await fetchInterviews();
     })();
     return () => {
       mounted = false;
     };
-  }, [userId]);
+  }, [fetchInterviews]);
+
+  useEffect(() => {
+    const handleAppNotification = (event) => {
+      const notif = event?.detail;
+      if (notif?.type === "interview") {
+        fetchInterviews();
+      }
+    };
+
+    window.addEventListener("app:notification", handleAppNotification);
+    return () => window.removeEventListener("app:notification", handleAppNotification);
+  }, [fetchInterviews]);
 
   const pendingCount = useMemo(() => {
     return interviews.filter((interview) => String(interview.status || "").toLowerCase() === "pending").length;
@@ -43,19 +83,7 @@ const InterviewPanel = () => {
         status: status,
       });
       setMessage(`Interview ${status}!`);
-      try {
-        // refetch driver document then reload interviews by driver._id
-        const driverRes = await api.get(`/drivers/user/${userId}`);
-        const driverDoc = driverRes.data;
-        if (driverDoc && driverDoc._id) {
-          const res = await api.get(`/interviews/driver/${driverDoc._id}`);
-          setInterviews(res.data);
-        } else {
-          setInterviews([]);
-        }
-      } catch (err) {
-        console.error("Error fetching interviews:", err);
-      }
+      await fetchInterviews();
     } catch (err) {
       setMessage(err.response?.data?.message || "Error responding to interview");
     }
@@ -75,7 +103,7 @@ const InterviewPanel = () => {
         <p>No interview requests yet.</p>
       ) : (
         interviews.map((interview) => (
-          <div key={interview._id} style={{ ...listItemStyle, borderColor: String(interview.status || "").toLowerCase() === "pending" ? "#f59e0b" : "#ddd" }}>
+          <div key={interview._id} style={{ ...listItemStyle, borderColor: String(interview.status || "").toLowerCase() === "pending" ? "#f59e0b" : "rgba(242,240,236,0.12)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <h4 style={{ margin: 0 }}>Interview request from {interview.ownerName || interview.ownerId}</h4>
               {String(interview.status || "").toLowerCase() === "pending" && <span style={newBadgeStyle}>NEW</span>}
@@ -153,12 +181,12 @@ const containerStyle = {
   maxWidth: "700px",
   margin: "20px auto",
   padding: "20px",
-  border: "1px solid #ddd",
+  border: "1px solid rgba(242,240,236,0.12)",
   borderRadius: "8px",
-  backgroundColor: "#f9f9f9",
+  backgroundColor: "#141414",
 };
 
-const listItemStyle = { padding: "15px", border: "1px solid #ddd", borderRadius: "5px", marginBottom: "15px", backgroundColor: "#fff" };
+const listItemStyle = { padding: "15px", border: "1px solid rgba(242,240,236,0.12)", borderRadius: "5px", marginBottom: "15px", backgroundColor: "#111" };
 const buttonStyle = { padding: "8px 15px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" };
 const newBadgeStyle = {
   display: "inline-flex",
